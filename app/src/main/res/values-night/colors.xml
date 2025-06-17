@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FFFFFFFF</color> <!-- Use white for text on dark backgrounds -->
+    <color name="white">#FF121212</color> <!-- Modern dark background -->
+    <color name="orange">#FFFF6B35</color> <!-- Keep accent vibrant -->
+    <color name="orange_light">#FFFF9E7A</color> <!-- Slightly lighter accent -->
+    <color name="gray_light">#FF232323</color> <!-- Very dark gray for surfaces -->
+    <color name="gray_medium">#FF2C2C2C</color> <!-- Medium dark gray for cards -->
+    <color name="gray_dark">#FFB0B0B0</color> <!-- Light gray for text/icons -->
+    <color name="success_green">#FF4CAF50</color> <!-- Keep success color vibrant -->
+</resources> 
