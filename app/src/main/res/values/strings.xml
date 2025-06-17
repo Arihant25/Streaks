@@ -22,6 +22,18 @@
         <item quantity="one">%d day</item>
         <item quantity="other">%d days</item>
     </plurals>
+    <plurals name="streak_weeks">
+        <item quantity="one">%d week</item>
+        <item quantity="other">%d weeks</item>
+    </plurals>
+    <plurals name="streak_months">
+        <item quantity="one">%d month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <plurals name="streak_years">
+        <item quantity="one">%d year</item>
+        <item quantity="other">%d years</item>
+    </plurals>
     <string name="no_streaks_yet">Ready to get started?</string>
     <string name="tap_to_add_first_streak">Go to settings to add your first streak!</string>
     <string name="streak_not_started">Not started yet</string>

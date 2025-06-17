@@ -25,11 +25,29 @@ class StreaksAdapter(
             binding.streakCount.text = if (streak.currentStreak == 0) {
                 binding.root.context.getString(R.string.streak_not_started)
             } else {
-                binding.root.context.resources.getQuantityString(
-                    R.plurals.streak_days,
-                    streak.currentStreak,
-                    streak.currentStreak
-                )
+                val unit = when (streak.frequency) {
+                    com.example.streaks.data.FrequencyType.DAILY -> binding.root.context.resources.getQuantityString(
+                        R.plurals.streak_days,
+                        streak.currentStreak,
+                        streak.currentStreak
+                    )
+                    com.example.streaks.data.FrequencyType.WEEKLY -> binding.root.context.resources.getQuantityString(
+                        R.plurals.streak_weeks,
+                        streak.currentStreak,
+                        streak.currentStreak
+                    )
+                    com.example.streaks.data.FrequencyType.MONTHLY -> binding.root.context.resources.getQuantityString(
+                        R.plurals.streak_months,
+                        streak.currentStreak,
+                        streak.currentStreak
+                    )
+                    com.example.streaks.data.FrequencyType.YEARLY -> binding.root.context.resources.getQuantityString(
+                        R.plurals.streak_years,
+                        streak.currentStreak,
+                        streak.currentStreak
+                    )
+                }
+                unit
             }
             
             // Update completion circle
