@@ -290,11 +290,10 @@ class StreakDetailsFragment : Fragment() {
         val year = java.time.LocalDate.now().year
         val startDate = java.time.LocalDate.of(year, 1, 1)
         val endDate = java.time.LocalDate.of(year, 12, 31)
-        
-        val container = android.widget.LinearLayout(context)
+          val container = android.widget.LinearLayout(context)
         container.orientation = android.widget.LinearLayout.VERTICAL
         container.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24)) 
-        container.setBackgroundColor(resolveThemeColor(context, com.google.android.material.R.attr.colorSurface))
+        container.setBackgroundColor(ContextCompat.getColor(context, R.color.white))
         
         val title = android.widget.TextView(context)
         title.text = "$year Activity"
@@ -397,11 +396,10 @@ class StreakDetailsFragment : Fragment() {
         }
         
         val monthName = now.month.name.lowercase().replaceFirstChar { it.uppercase() } + " " + now.year
-
         val container = android.widget.LinearLayout(context)
         container.orientation = android.widget.LinearLayout.VERTICAL
         container.setPadding(16, 16, 16, 16)
-        container.setBackgroundColor(resolveThemeColor(context, com.google.android.material.R.attr.colorSurface))
+        container.setBackgroundColor(ContextCompat.getColor(context, R.color.white))
         container.layoutParams = android.widget.LinearLayout.LayoutParams(
             android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
