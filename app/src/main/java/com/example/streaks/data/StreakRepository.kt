@@ -41,6 +41,7 @@ class StreakRepository {
                         createdDate = dto.createdDate,
                         lastCompletedDate = lastCompleted,
                         currentStreak = dto.currentStreak,
+                        bestStreak = dto.bestStreak,
                         isCompletedToday = lastCompleted == today.format(formatter),
                         completions = dto.completions ?: emptyList(),
                         reminder = dto.reminder
@@ -66,6 +67,7 @@ class StreakRepository {
                     createdDate = streak.createdDate,
                     lastCompletedDate = streak.lastCompletedDate,
                     currentStreak = streak.currentStreak,
+                    bestStreak = streak.bestStreak,
                     completions = streak.completions,
                     reminder = streak.reminder
                 )
@@ -89,6 +91,7 @@ class StreakRepository {
             createdDate = todayStr,
             lastCompletedDate = null,
             currentStreak = 0,
+            bestStreak = 0,
             isCompletedToday = false,
             completions = emptyList(),
             reminder = null
@@ -109,9 +112,12 @@ class StreakRepository {
             if (streak.isCompletedToday) return // Already completed today
             val updatedCompletions = streak.completions + todayStr
             val (shouldIncrement, filteredCompletions) = checkAndUpdateStreak(streak, updatedCompletions, today)
+            val newCurrentStreak = if (shouldIncrement) streak.currentStreak + 1 else streak.currentStreak
+            val newBestStreak = maxOf(streak.bestStreak, newCurrentStreak)
             val updatedStreak = streak.copy(
                 lastCompletedDate = todayStr,
-                currentStreak = if (shouldIncrement) streak.currentStreak + 1 else streak.currentStreak,
+                currentStreak = newCurrentStreak,
+                bestStreak = newBestStreak,
                 isCompletedToday = true,
                 completions = filteredCompletions,
                 reminder = null

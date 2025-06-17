@@ -44,7 +44,7 @@ class StreakDetailsFragment : Fragment() {
         binding.textName.text = streak.name
         binding.textFrequency.text = formatFrequency(streak.frequency, streak.frequencyCount)
         binding.textCurrentStreak.text = "Current: ${streak.currentStreak}"
-        binding.textBestStreak.text = "Best: ${streak.currentStreak}" // TODO: Replace with real best streak
+        binding.textBestStreak.text = "Best: ${streak.bestStreak}"
 
         // --- GitHub-style year graph ---
         val yearGraph = createYearGraphView(streak)

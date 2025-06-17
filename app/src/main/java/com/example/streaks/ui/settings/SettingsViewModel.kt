@@ -97,6 +97,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 createdDate = streak.createdDate,
                 lastCompletedDate = streak.lastCompletedDate,
                 currentStreak = streak.currentStreak,
+                bestStreak = streak.bestStreak,
                 completions = streak.completions,
                 reminder = streak.reminder
             )

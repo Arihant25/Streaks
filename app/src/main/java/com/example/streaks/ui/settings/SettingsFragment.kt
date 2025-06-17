@@ -242,6 +242,7 @@ class SettingsFragment : Fragment() {
                     createdDate = dto.createdDate,
                     lastCompletedDate = dto.lastCompletedDate,
                     currentStreak = dto.currentStreak,
+                    bestStreak = dto.bestStreak,
                     isCompletedToday = isCompletedToday,
                     completions = dto.completions ?: emptyList(),
                     reminder = dto.reminder

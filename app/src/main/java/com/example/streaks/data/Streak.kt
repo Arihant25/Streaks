@@ -21,6 +21,7 @@ data class Streak(
     val createdDate: String, // Store as ISO string for Parcelable
     val lastCompletedDate: String?, // Store as ISO string or null
     val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
     val isCompletedToday: Boolean = false,
     val completions: List<String> = emptyList(), // Store as ISO strings
     val reminder: Reminder? = null
@@ -44,6 +45,7 @@ data class StreakExportDto(
     val createdDate: String, // formatted as ISO string
     val lastCompletedDate: String?, // formatted as ISO string or null
     val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
     val completions: List<String> = emptyList(),
     val reminder: Reminder? = null
 )
