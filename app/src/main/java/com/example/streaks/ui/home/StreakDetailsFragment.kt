@@ -153,7 +153,7 @@ class StreakDetailsFragment : Fragment() {
             )
         }
 
-        val streakUnit = getStreakUnit(streak.frequency)
+        val streakUnit = getStreakUnit(streak.frequency, streak.currentStreak)
 
         // Current streak (left side)
         val currentStreakLayout = android.widget.LinearLayout(requireContext()).apply {
@@ -266,12 +266,12 @@ class StreakDetailsFragment : Fragment() {
         grandParent.addView(streakStatsContainer, parentIndex)
     }
 
-    private fun getStreakUnit(frequency: com.example.streaks.data.FrequencyType): String {
+    private fun getStreakUnit(frequency: com.example.streaks.data.FrequencyType, count: Int): String {
         return when (frequency) {
-            com.example.streaks.data.FrequencyType.DAILY -> "Days"
-            com.example.streaks.data.FrequencyType.WEEKLY -> "Weeks"
-            com.example.streaks.data.FrequencyType.MONTHLY -> "Months"
-            com.example.streaks.data.FrequencyType.YEARLY -> "Years"
+            com.example.streaks.data.FrequencyType.DAILY -> if (count == 1) "Day" else "Days"
+            com.example.streaks.data.FrequencyType.WEEKLY -> if (count == 1) "Week" else "Weeks"
+            com.example.streaks.data.FrequencyType.MONTHLY -> if (count == 1) "Month" else "Months"
+            com.example.streaks.data.FrequencyType.YEARLY -> if (count == 1) "Year" else "Years"
         }
     }
 
@@ -290,7 +290,9 @@ class StreakDetailsFragment : Fragment() {
         val year = java.time.LocalDate.now().year
         val startDate = java.time.LocalDate.of(year, 1, 1)
         val endDate = java.time.LocalDate.of(year, 12, 31)
-          val container = android.widget.LinearLayout(context)
+        val daysInYear = if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 366 else 365
+        
+        val container = android.widget.LinearLayout(context)
         container.orientation = android.widget.LinearLayout.VERTICAL
         container.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24)) 
         container.setBackgroundColor(ContextCompat.getColor(context, R.color.white))
@@ -301,80 +303,64 @@ class StreakDetailsFragment : Fragment() {
         title.setTextColor(resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurface))
         title.typeface = android.graphics.Typeface.DEFAULT_BOLD
         title.setPadding(0, 0, 0, dpToPx(16))
+        title.gravity = android.view.Gravity.CENTER
         container.addView(title)
         
-        // Changed gridContainer to be vertical, removed HorizontalScrollView
         val gridContainer = android.widget.LinearLayout(context)
-        gridContainer.orientation = android.widget.LinearLayout.VERTICAL 
-        // Padding/margins will be handled by cells and columns directly
+        gridContainer.orientation = android.widget.LinearLayout.VERTICAL
 
         val cellSizeDp = 10
         val spaceBetweenCellsDp = 2
-
         val cellSizePx = dpToPx(cellSizeDp)
-        val cellMarginPx = dpToPx(spaceBetweenCellsDp / 2) 
+        val cellMarginPx = dpToPx(spaceBetweenCellsDp / 2)
+
+        // Calculate available width for the grid
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidthPx = displayMetrics.widthPixels
+        val horizontalPadding = dpToPx(32) // 16dp padding on each side
+        val availableWidth = screenWidthPx - horizontalPadding
+
+        // Calculate how many cells can fit in one row
+        val totalCellWidth = cellSizePx + (2 * cellMarginPx)
+        val cellsPerRow = (availableWidth / totalCellWidth).toInt()
 
         val colorEmpty = Color.parseColor("#EBEDF0")
-        val colorCompleted = Color.parseColor("#40C463")
+        val colorCompleted = Color.parseColor("#FFA500") // Orange color
 
-        var dayToDraw = startDate.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.SUNDAY))
-        
-        val totalWeeksToDisplay = 53 
-        val weeksPerRow = 26 // Display roughly 6 months per row
+        var currentDate = startDate
+        var currentRow: android.widget.LinearLayout? = null
 
-        var currentSuperRow: android.widget.LinearLayout? = null
-
-        for (weekIndex in 0 until totalWeeksToDisplay) {
-            if (weekIndex % weeksPerRow == 0) {
-                currentSuperRow = android.widget.LinearLayout(context)
-                currentSuperRow.orientation = android.widget.LinearLayout.HORIZONTAL
-                val superRowParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+        for (dayIndex in 0 until daysInYear) {
+            if (dayIndex % cellsPerRow == 0) {
+                currentRow = android.widget.LinearLayout(context)
+                currentRow.orientation = android.widget.LinearLayout.HORIZONTAL
+                val rowParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                if (gridContainer.childCount > 0) { // Add top margin for subsequent super rows
-                    superRowParams.topMargin = dpToPx(spaceBetweenCellsDp * 2) // Space between super rows
+                if (gridContainer.childCount > 0) {
+                    rowParams.topMargin = dpToPx(spaceBetweenCellsDp)
                 }
-                currentSuperRow.layoutParams = superRowParams
-                gridContainer.addView(currentSuperRow)
+                currentRow.layoutParams = rowParams
+                gridContainer.addView(currentRow)
             }
 
-            val weekColumn = android.widget.LinearLayout(context)
-            weekColumn.orientation = android.widget.LinearLayout.VERTICAL
-            val columnLayoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            // Add start margin if not the first column in the current superRow
-            if (currentSuperRow != null && currentSuperRow.childCount > 0) {
-                columnLayoutParams.marginStart = dpToPx(spaceBetweenCellsDp) 
-            }
-            weekColumn.layoutParams = columnLayoutParams
+            val cellView = android.view.View(context)
+            val cellParams = android.widget.LinearLayout.LayoutParams(cellSizePx, cellSizePx)
+            cellParams.setMargins(cellMarginPx, cellMarginPx, cellMarginPx, cellMarginPx)
+            cellView.layoutParams = cellParams
 
-            for (dayOfWeekIndex in 0..6) { 
-                val cellView = android.view.View(context)
-                val cellParams = android.widget.LinearLayout.LayoutParams(cellSizePx, cellSizePx)
-                cellParams.setMargins(cellMarginPx, cellMarginPx, cellMarginPx, cellMarginPx)
-                cellView.layoutParams = cellParams
-
-                if (dayToDraw.year == year && !dayToDraw.isBefore(startDate) && !dayToDraw.isAfter(endDate)) {
-                    if (completions.contains(dayToDraw)) {
-                        cellView.setBackgroundColor(colorCompleted)
-                    } else {
-                        cellView.setBackgroundColor(colorEmpty)
-                    }
-                } else {
-                    cellView.setBackgroundColor(Color.TRANSPARENT) 
-                }
-                weekColumn.addView(cellView)
-                dayToDraw = dayToDraw.plusDays(1)
+            if (completions.contains(currentDate)) {
+                cellView.setBackgroundColor(colorCompleted)
+            } else {
+                cellView.setBackgroundColor(colorEmpty)
             }
-            currentSuperRow?.addView(weekColumn)
+
+            currentRow?.addView(cellView)
+            currentDate = currentDate.plusDays(1)
         }
         
-        // Add gridContainer (which is now vertical and contains horizontal rows of weeks) to the main container
         container.addView(gridContainer)
-        
         return container
     }
 

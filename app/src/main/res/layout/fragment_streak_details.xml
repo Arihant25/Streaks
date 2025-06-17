@@ -71,18 +71,18 @@
                 android:textColor="?android:textColorPrimary" />
         </LinearLayout>
 
-        <!-- GitHub-style year graph placeholder -->
-        <FrameLayout
-            android:id="@+id/year_graph_container"
-            android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginBottom="24dp" />
-
         <!-- Monthly view placeholder -->
         <FrameLayout
             android:id="@+id/monthly_view_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp" />
+
+        <!-- GitHub-style year graph placeholder -->
+        <FrameLayout
+            android:id="@+id/year_graph_container"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
             android:layout_marginBottom="24dp" />
 
         <!-- Reminder section -->
