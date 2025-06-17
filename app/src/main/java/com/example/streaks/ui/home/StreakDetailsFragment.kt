@@ -24,6 +24,7 @@ import com.example.streaks.ui.dialogs.AddStreakDialog
 import com.example.streaks.ui.home.HomeViewModel
 import android.app.AlarmManager
 import android.app.PendingIntent
+import androidx.navigation.fragment.findNavController
 
 class StreakDetailsFragment : Fragment() {
     private val args: StreakDetailsFragmentArgs by navArgs()
@@ -84,7 +85,9 @@ class StreakDetailsFragment : Fragment() {
                 },
                 isEditMode = true,
                 initialFrequency = streak.frequency,
-                initialFrequencyCount = streak.frequencyCount
+                initialFrequencyCount = streak.frequencyCount,
+                initialName = streak.name,
+                initialEmoji = streak.emoji
             )
             dialog.show(parentFragmentManager, "EditStreakDialog")
         }
@@ -104,6 +107,28 @@ class StreakDetailsFragment : Fragment() {
         }
 
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // Ensure tapping home in bottom nav always navigates to home
+        val mainActivity = requireActivity() as? com.example.streaks.MainActivity
+        val navView = mainActivity?.getBottomNavigationView()
+        navView?.setOnItemSelectedListener { item ->
+            if (item.itemId == com.example.streaks.R.id.navigation_home) {
+                findNavController().navigate(
+                    com.example.streaks.R.id.navigation_home,
+                    null,
+                    androidx.navigation.NavOptions.Builder()
+                        .setPopUpTo(com.example.streaks.R.id.navigation_home, inclusive = false)
+                        .setLaunchSingleTop(true)
+                        .build()
+                )
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private fun formatFrequency(frequency: com.example.streaks.data.FrequencyType, count: Int): String {

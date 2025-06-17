@@ -36,4 +36,5 @@
     <string name="import_success">Import successful!</string>
     <string name="import_failed">Import failed.</string>
     <string name="select_import_file">Select a file to import</string>
+    <string name="edit_streak">Edit Streak</string>
 </resources>

@@ -17,12 +17,15 @@ import com.example.streaks.databinding.DialogAddStreakBinding
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.text.InputFilter
+import android.view.ViewGroup
 
 class AddStreakDialog(
     private val onStreakAdded: (String, String, FrequencyType, Int) -> Unit,
     private val isEditMode: Boolean = false,
     private val initialFrequency: FrequencyType? = null,
-    private val initialFrequencyCount: Int? = null
+    private val initialFrequencyCount: Int? = null,
+    private val initialName: String? = null,
+    private val initialEmoji: String? = null
 ) : DialogFragment() {
 
     private var _binding: DialogAddStreakBinding? = null
@@ -34,14 +37,42 @@ class AddStreakDialog(
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = DialogAddStreakBinding.inflate(layoutInflater)
         
+        // Set dialog title based on mode
+        val titleTextView = (_binding?.root as ViewGroup).getChildAt(0)
+        if (titleTextView is android.widget.TextView) {
+            titleTextView.text = if (isEditMode) getString(R.string.edit_streak) else getString(R.string.create_streak)
+        }
+        // Set button text based on mode
+        binding.btnCreate.text = if (isEditMode) getString(R.string.edit_streak) else getString(R.string.create_streak)
+        
         setupEmojiPicker()
         setupFrequencySpinner()
         setupClickListeners()
         
         if (isEditMode) {
-            // Prefill frequency and count, and disable editing
-            initialFrequency?.let {
-                val freqIndex = when (it) {
+            // Prefill name and emoji
+            initialName?.let {
+                binding.editStreakName.setText(it)
+            }
+            initialEmoji?.let {
+                selectedEmoji = it
+                binding.selectedEmoji.text = it
+            }
+            // Hide frequency-related views in edit mode
+            binding.spinnerFrequency.visibility = View.GONE
+            binding.inputLayoutCount.visibility = View.GONE
+            // Hide the frequency label (TextView just above spinner)
+            val parent = binding.spinnerFrequency.parent as ViewGroup
+            val spinnerIndex = parent.indexOfChild(binding.spinnerFrequency)
+            if (spinnerIndex > 0) {
+                val labelView = parent.getChildAt(spinnerIndex - 1)
+                if (labelView is android.widget.TextView && labelView.text == getString(R.string.frequency)) {
+                    labelView.visibility = View.GONE
+                }
+            }
+        } else {
+            if (initialFrequency != null) {
+                val freqIndex = when (initialFrequency) {
                     FrequencyType.DAILY -> 0
                     FrequencyType.WEEKLY -> 1
                     FrequencyType.MONTHLY -> 2
@@ -50,8 +81,8 @@ class AddStreakDialog(
                 binding.spinnerFrequency.setSelection(freqIndex)
                 binding.spinnerFrequency.isEnabled = false
             }
-            initialFrequencyCount?.let {
-                binding.editFrequencyCount.setText(it.toString())
+            if (initialFrequencyCount != null) {
+                binding.editFrequencyCount.setText(initialFrequencyCount.toString())
                 binding.editFrequencyCount.isEnabled = false
             }
         }
