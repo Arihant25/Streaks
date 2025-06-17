@@ -17,19 +17,39 @@
         android:layout_marginBottom="16dp" />
 
     <!-- Emoji Selection -->
-    <TextView
-        android:layout_width="match_parent"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_emoji_picker"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/select_emoji"
-        android:textSize="14sp"
-        android:textColor="@color/gray_dark"
-        android:layout_marginBottom="8dp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/emoji_recycler"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginBottom="16dp" />
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="2dp"
+        android:clickable="true"
+        android:focusable="true">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="12dp">
+            <TextView
+                android:id="@+id/selected_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔥"
+                android:textSize="36sp"
+                android:layout_gravity="center_horizontal" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/select_emoji"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Streak Name -->
     <com.google.android.material.textfield.TextInputLayout
@@ -45,7 +65,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/streak_name"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:singleLine="true"
+            android:inputType="textCapSentences|textNoSuggestions"
+            android:imeOptions="actionDone" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -64,30 +87,24 @@
         android:layout_height="48dp"
         android:layout_marginBottom="16dp" />
 
-    <!-- Frequency Count -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/how_many_times"
-        android:textSize="14sp"
-        android:textColor="@color/gray_dark"
-        android:layout_marginBottom="8dp" />
-
+    <!-- Frequency Count (make these gone by default) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/input_layout_count"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         app:boxStrokeColor="@color/orange"
-        app:hintTextColor="@color/orange">
+        app:hintTextColor="@color/orange"
+        android:visibility="gone"
+        android:hint="@string/how_many_times">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edit_frequency_count"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="1"
             android:inputType="number"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:singleLine="true" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

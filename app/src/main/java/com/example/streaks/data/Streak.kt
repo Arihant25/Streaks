@@ -11,7 +11,8 @@ data class Streak(
     val createdDate: LocalDate,
     val lastCompletedDate: LocalDate?,
     val currentStreak: Int = 0,
-    val isCompletedToday: Boolean = false
+    val isCompletedToday: Boolean = false,
+    val completions: List<LocalDate> = emptyList()
 )
 
 data class StreakExportDto(
@@ -22,7 +23,8 @@ data class StreakExportDto(
     val frequencyCount: Int,
     val createdDate: String, // formatted as ISO string
     val lastCompletedDate: String?, // formatted as ISO string or null
-    val currentStreak: Int = 0
+    val currentStreak: Int = 0,
+    val completions: List<String> = emptyList()
 )
 
 enum class FrequencyType {
