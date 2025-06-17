@@ -28,6 +28,22 @@ class MainActivity : AppCompatActivity() {
 
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         navView.setupWithNavController(navController)
+
+        // Add custom navigation listener for home icon
+        navView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_home -> {
+                    // Pop back to home and clear the back stack
+                    navController.popBackStack(R.id.navigation_home, true)
+                    navController.navigate(R.id.navigation_home)
+                    true
+                }
+                else -> {
+                    navController.navigate(item.itemId)
+                    true
+                }
+            }
+        }
     }
 
     fun getBottomNavigationView(): BottomNavigationView = binding.navView

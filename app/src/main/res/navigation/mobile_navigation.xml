@@ -13,6 +13,11 @@
         <action
             android:id="@+id/action_home_to_streakDetails"
             app:destination="@id/streakDetailsFragment" />
+        <action
+            android:id="@+id/action_global_home"
+            app:destination="@id/navigation_home"
+            app:popUpTo="@id/navigation_home"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
