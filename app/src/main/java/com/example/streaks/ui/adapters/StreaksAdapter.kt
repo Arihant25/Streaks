@@ -9,16 +9,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.streaks.R
 import com.example.streaks.data.Streak
 import com.example.streaks.databinding.ItemStreakCardBinding
+import android.view.View
 
 class StreaksAdapter(
     private val onStreakToggled: (String, Boolean) -> Unit,
-    private val onStreakClicked: (Streak) -> Unit
+    private val onStreakClicked: (Streak, View) -> Unit
 ) : ListAdapter<Streak, StreaksAdapter.StreakViewHolder>(DiffCallback()) {
 
     class StreakViewHolder(private val binding: ItemStreakCardBinding) : 
         RecyclerView.ViewHolder(binding.root) {
         
-        fun bind(streak: Streak, onToggled: (String, Boolean) -> Unit, onClicked: (Streak) -> Unit) {
+        fun bind(streak: Streak, onToggled: (String, Boolean) -> Unit, onClicked: (Streak, View) -> Unit) {
             binding.emojiIcon.text = streak.emoji
             binding.streakName.text = streak.name
             binding.streakCount.text = if (streak.currentStreak == 0) {
@@ -42,8 +43,11 @@ class StreaksAdapter(
             }
             // Add click listener for the whole card
             binding.root.setOnClickListener {
-                onClicked(streak)
+                onClicked(streak, binding.root)
             }
+
+            // Set transitionName on the card container
+            binding.root.transitionName = "streak_card_${streak.id}"
         }
     }
 

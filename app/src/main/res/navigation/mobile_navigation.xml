@@ -30,6 +30,11 @@
             android:name="streak"
             app:argType="com.example.streaks.data.Streak"
             app:nullable="false" />
+        <action
+            android:id="@+id/action_streakDetails_to_home"
+            app:destination="@id/navigation_home"
+            app:popUpTo="@id/navigation_home"
+            app:popUpToInclusive="true" />
     </fragment>
 
 </navigation>

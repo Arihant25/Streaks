@@ -12,6 +12,9 @@ lifecycleLivedataKtx = "2.6.1"
 lifecycleViewmodelKtx = "2.6.1"
 navigationFragmentKtx = "2.6.0"
 navigationUiKtx = "2.6.0"
+fragment = "1.8.0"
+activity = "1.8.2"
+transition = "1.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -25,6 +28,9 @@ androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecy
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-transition = { group = "androidx.transition", name = "transition", version.ref = "transition" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

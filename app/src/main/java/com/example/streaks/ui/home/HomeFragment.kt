@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.streaks.databinding.FragmentHomeBinding
 import com.example.streaks.ui.adapters.StreaksAdapter
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.transition.platform.MaterialSharedAxis
+import com.google.android.material.transition.platform.MaterialContainerTransform
 
 class HomeFragment : Fragment() {
 
@@ -19,6 +21,13 @@ class HomeFragment : Fragment() {
     
     private lateinit var homeViewModel: HomeViewModel
     private lateinit var streaksAdapter: StreaksAdapter
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Predictive back: Material motion for enter/return
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
+        returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,9 +52,12 @@ class HomeFragment : Fragment() {
                     homeViewModel.uncompleteStreak(streakId, requireContext())
                 }
             },
-            onStreakClicked = { streak ->
+            onStreakClicked = { streak, view ->
                 val action = com.example.streaks.ui.home.HomeFragmentDirections.actionHomeToStreakDetails(streak)
-                findNavController().navigate(action)
+                val extras = androidx.navigation.fragment.FragmentNavigatorExtras(
+                    view to "streak_card_${streak.id}"
+                )
+                findNavController().navigate(action, extras)
             }
         )
         

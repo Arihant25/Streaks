@@ -43,6 +43,7 @@ import android.app.Application
 import com.example.streaks.data.StreakExportDto
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.google.android.material.transition.platform.MaterialSharedAxis
 
 class SettingsFragment : Fragment() {
 
@@ -84,6 +85,13 @@ class SettingsFragment : Fragment() {
             Toast.makeText(requireContext(), "Notification permission denied", Toast.LENGTH_SHORT).show()
             binding.switchEnableNotifications.isChecked = false
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Predictive back: Material motion for enter/return
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
+        returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
     }
 
     override fun onCreateView(

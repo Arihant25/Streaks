@@ -1,13 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.Streaks" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.Streaks" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/orange</item>
-        <item name="colorPrimaryVariant">@color/gray_dark</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/orange_light</item>
-        <item name="colorSecondaryVariant">@color/gray_medium</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">@color/gray_dark</item>

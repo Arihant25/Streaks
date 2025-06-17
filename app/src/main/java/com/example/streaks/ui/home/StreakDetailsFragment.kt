@@ -30,12 +30,25 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import androidx.navigation.fragment.findNavController
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.transition.platform.MaterialSharedAxis
+import com.google.android.material.transition.platform.MaterialContainerTransform
+import com.example.streaks.R
 
 class StreakDetailsFragment : Fragment() {
     private val args: StreakDetailsFragmentArgs by navArgs()
     private val homeViewModel: HomeViewModel by activityViewModels()
     private var reminder: Reminder? = null // In-memory for now
     private lateinit var notificationScheduler: NotificationScheduler
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Predictive back: Material motion for enter/return
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
+        returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
+        // Optional: For a smoother transition, you can also set exit and reenter transitions
+        // exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
+        // reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,8 +59,6 @@ class StreakDetailsFragment : Fragment() {
         val binding = FragmentStreakDetailsBinding.inflate(inflater, container, false)
         notificationScheduler = NotificationScheduler(requireContext())
         
-        // Set white background
-        binding.root.setBackgroundColor(Color.WHITE)
         binding.textEmoji.text = streak.emoji
         binding.textName.text = streak.name
         binding.textFrequency.text = formatFrequency(streak.frequency, streak.frequencyCount)
@@ -121,7 +132,21 @@ class StreakDetailsFragment : Fragment() {
                 .show()
         }
 
+        // Set transitionName for shared element
+        binding.root.transitionName = "streak_card_${streak.id}"
+
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // Handle predictive back gesture
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                findNavController().popBackStack()
+            }
+        })
     }
 
     private fun setupStreakStatsLayout(binding: FragmentStreakDetailsBinding, streak: Streak) {
@@ -159,7 +184,7 @@ class StreakDetailsFragment : Fragment() {
         val currentStreakNumber = android.widget.TextView(requireContext()).apply {
             text = "${streak.currentStreak}" // Number only
             textSize = 54f
-            setTextColor(Color.BLACK)
+            setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurface))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             // gravity = android.view.Gravity.START // Gravity handled by parent
         }
@@ -167,7 +192,7 @@ class StreakDetailsFragment : Fragment() {
         val currentStreakUnitText = android.widget.TextView(requireContext()).apply {
             text = streakUnit
             textSize = 14f // Smaller font size for unit
-            setTextColor(Color.BLACK)
+            setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurfaceVariant))
             setPadding(dpToPx(4), 0, 0, dpToPx(4)) // Add some padding and adjust bottom padding for alignment
         }
         currentStreakNumberLayout.addView(currentStreakNumber)
@@ -176,7 +201,7 @@ class StreakDetailsFragment : Fragment() {
         val currentStreakLabel = android.widget.TextView(requireContext()).apply {
             text = "Current Streak"
             textSize = 14f
-            setTextColor(Color.parseColor("#666666"))
+            setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurfaceVariant))
             gravity = android.view.Gravity.START
             setPadding(0, 8, 0, 0)
         }
@@ -207,7 +232,7 @@ class StreakDetailsFragment : Fragment() {
         val bestStreakNumber = android.widget.TextView(requireContext()).apply {
             text = "${streak.bestStreak}" // Number only
             textSize = 54f
-            setTextColor(Color.parseColor("#666666"))
+            setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurfaceVariant))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             // gravity = android.view.Gravity.END // Gravity handled by parent
         }
@@ -215,7 +240,7 @@ class StreakDetailsFragment : Fragment() {
         val bestStreakUnitText = android.widget.TextView(requireContext()).apply {
             text = streakUnit
             textSize = 14f // Smaller font size for unit
-            setTextColor(Color.parseColor("#666666"))
+            setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurfaceVariant))
             setPadding(dpToPx(4), 0, 0, dpToPx(4)) // Add some padding and adjust bottom padding
         }
         bestStreakNumberLayout.addView(bestStreakNumber)
@@ -224,7 +249,7 @@ class StreakDetailsFragment : Fragment() {
         val bestStreakLabel = android.widget.TextView(requireContext()).apply {
             text = "Best Streak"
             textSize = 14f
-            setTextColor(Color.parseColor("#666666"))
+            setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurfaceVariant))
             gravity = android.view.Gravity.END
             setPadding(0, 8, 0, 0)
         }
@@ -245,36 +270,6 @@ class StreakDetailsFragment : Fragment() {
         // Remove old layout and add new one
         grandParent.removeView(parentContainer)
         grandParent.addView(streakStatsContainer, parentIndex)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        // Handle predictive back gesture
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                findNavController().popBackStack()
-            }
-        })
-
-        // Ensure tapping home in bottom nav always navigates to home
-        val mainActivity = requireActivity() as? com.example.streaks.MainActivity
-        val navView = mainActivity?.getBottomNavigationView()
-        navView?.setOnItemSelectedListener { item ->
-            if (item.itemId == com.example.streaks.R.id.navigation_home) {
-                findNavController().navigate(
-                    com.example.streaks.R.id.navigation_home,
-                    null,
-                    androidx.navigation.NavOptions.Builder()
-                        .setPopUpTo(com.example.streaks.R.id.navigation_home, inclusive = false)
-                        .setLaunchSingleTop(true)
-                        .build()
-                )
-                true
-            } else {
-                false
-            }
-        }
     }
 
     private fun getStreakUnit(frequency: com.example.streaks.data.FrequencyType): String {
@@ -305,12 +300,12 @@ class StreakDetailsFragment : Fragment() {
         val container = android.widget.LinearLayout(context)
         container.orientation = android.widget.LinearLayout.VERTICAL
         container.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24)) 
-        container.setBackgroundColor(Color.WHITE)
+        container.setBackgroundColor(resolveThemeColor(context, com.google.android.material.R.attr.colorSurface))
         
         val title = android.widget.TextView(context)
         title.text = "$year Activity"
         title.textSize = 16f
-        title.setTextColor(Color.BLACK)
+        title.setTextColor(resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurface))
         title.typeface = android.graphics.Typeface.DEFAULT_BOLD
         title.setPadding(0, 0, 0, dpToPx(16))
         container.addView(title)
@@ -412,7 +407,7 @@ class StreakDetailsFragment : Fragment() {
         val container = android.widget.LinearLayout(context)
         container.orientation = android.widget.LinearLayout.VERTICAL
         container.setPadding(16, 16, 16, 16)
-        container.setBackgroundColor(Color.WHITE)
+        container.setBackgroundColor(resolveThemeColor(context, com.google.android.material.R.attr.colorSurface))
         container.layoutParams = android.widget.LinearLayout.LayoutParams(
             android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
@@ -422,7 +417,7 @@ class StreakDetailsFragment : Fragment() {
         val monthText = android.widget.TextView(context)
         monthText.text = monthName
         monthText.textSize = 16f
-        monthText.setTextColor(Color.BLACK)
+        monthText.setTextColor(resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurface))
         monthText.typeface = android.graphics.Typeface.DEFAULT_BOLD
         monthText.setPadding(0, 0, 0, 16)
         monthText.gravity = android.view.Gravity.CENTER
@@ -442,7 +437,7 @@ class StreakDetailsFragment : Fragment() {
             tv.text = day
             tv.gravity = android.view.Gravity.CENTER
             tv.textSize = 12f
-            tv.setTextColor(Color.parseColor("#666666"))
+            tv.setTextColor(resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant))
             tv.layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             tv.setPadding(0, 0, 0, 12)
             weekHeaderRow.addView(tv)
@@ -488,9 +483,9 @@ class StreakDetailsFragment : Fragment() {
                     dayTv.textSize = 14f
                     dayTv.setTextColor(
                         when {
-                            isCompleted -> Color.WHITE
-                            isToday -> Color.parseColor("#FF8C00")
-                            else -> Color.BLACK
+                            isCompleted -> resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurface)
+                            isToday -> resolveThemeColor(context, com.google.android.material.R.attr.colorPrimary)
+                            else -> resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant)
                         }
                     )
                     dayTv.typeface = if (isToday) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
@@ -505,14 +500,14 @@ class StreakDetailsFragment : Fragment() {
                         isCompleted -> {
                             val drawable = GradientDrawable()
                             drawable.shape = GradientDrawable.OVAL
-                            drawable.setColor(Color.parseColor("#39D353"))
+                            drawable.setColor(resolveThemeColor(context, com.google.android.material.R.attr.colorPrimary))
                             dayTv.background = drawable
                         }
                         isToday -> {
                             val drawable = GradientDrawable()
                             drawable.shape = GradientDrawable.OVAL
-                            drawable.setColor(Color.parseColor("#FFF3E0")) // Light orange background
-                            drawable.setStroke(dpToPx(2), Color.parseColor("#FF8C00"))
+                            drawable.setColor(resolveThemeColor(context, com.google.android.material.R.attr.colorSurface)) // Light orange background
+                            drawable.setStroke(dpToPx(2), resolveThemeColor(context, com.google.android.material.R.attr.colorPrimary))
                             dayTv.background = drawable
                         }
                     }
@@ -602,6 +597,14 @@ class StreakDetailsFragment : Fragment() {
                 scheduler.cancelReminder(streakId)
             }
         }
+    }
+
+    // Helper function to resolve color from theme attribute
+    private fun resolveThemeColor(context: Context, attr: Int): Int {
+        val typedValue = TypedValue()
+        val theme = context.theme
+        theme.resolveAttribute(attr, typedValue, true)
+        return typedValue.data
     }
 }
 
