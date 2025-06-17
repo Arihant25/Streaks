@@ -2,7 +2,7 @@
     <!-- Base application theme. -->
     <style name="Theme.Streaks" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/orange_light</item>
+        <item name="colorPrimary">@color/orange_dark</item>
         <item name="colorOnPrimary">@color/black</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/orange</item>

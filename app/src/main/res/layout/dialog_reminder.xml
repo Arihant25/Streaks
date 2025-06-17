@@ -42,12 +42,18 @@
         android:layout_marginBottom="16dp" />
 
     <!-- Remove reminder button -->
-    <Button
+    <TextView
         android:id="@+id/button_remove_reminder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:text="Remove Reminder"
-        android:textColor="@android:color/holo_red_dark"
+        android:textColor="@color/orange"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp"
         android:visibility="gone" />
 
 </LinearLayout> 

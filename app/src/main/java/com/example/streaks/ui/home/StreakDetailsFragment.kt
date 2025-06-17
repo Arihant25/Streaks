@@ -528,7 +528,7 @@ class StreakDetailsFragment : Fragment() {
 
     private fun updateReminderSummary(binding: FragmentStreakDetailsBinding) {
         binding.textReminderSummary.text = reminder?.toSummary() ?: "No reminder set"
-        binding.buttonSetReminder.text = if (reminder != null) "Edit Reminder" else "Set Reminder"
+        binding.buttonSetReminder.text = if (reminder != null) "Edit" else "Set Reminder"
     }
 
     private fun showReminderDialog(binding: FragmentStreakDetailsBinding) {
@@ -544,7 +544,7 @@ class StreakDetailsFragment : Fragment() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_reminder, null)
         val daysContainer = dialogView.findViewById<LinearLayout>(R.id.days_container)
         val timePicker = dialogView.findViewById<TimePicker>(R.id.time_picker)
-        val removeButton = dialogView.findViewById<Button>(R.id.button_remove_reminder)
+        val removeButton = dialogView.findViewById<TextView>(R.id.button_remove_reminder)
         
         // Set initial time
         timePicker.hour = selectedTime.hour
@@ -598,23 +598,18 @@ class StreakDetailsFragment : Fragment() {
                 
                 selectedTime = java.time.LocalTime.of(timePicker.hour, timePicker.minute)
                 
-                if (selectedDays.isEmpty()) {
-                    // If no days selected, treat as daily reminder
-                    val reminder = Reminder(selectedTime.toString(), emptyList())
-                    val updatedStreak = homeViewModel.setStreakReminder(args.streak.id, reminder, requireContext())
-                    this.reminder = updatedStreak?.reminder
-                    updateReminderSummary(binding)
-                    updatedStreak?.reminder?.let { 
-                        notificationScheduler.scheduleReminder(args.streak.id, args.streak.name, it)
-                    }
+                // If no days selected, treat as every day selected
+                val reminder = if (selectedDays.isEmpty()) {
+                    Reminder(selectedTime.toString(), (0..6).toList())
                 } else {
-                    val reminder = Reminder(selectedTime.toString(), selectedDays)
-                    val updatedStreak = homeViewModel.setStreakReminder(args.streak.id, reminder, requireContext())
-                    this.reminder = updatedStreak?.reminder
-                    updateReminderSummary(binding)
-                    updatedStreak?.reminder?.let { 
-                        notificationScheduler.scheduleReminder(args.streak.id, args.streak.name, it)
-                    }
+                    Reminder(selectedTime.toString(), selectedDays)
+                }
+                
+                val updatedStreak = homeViewModel.setStreakReminder(args.streak.id, reminder, requireContext())
+                this.reminder = updatedStreak?.reminder
+                updateReminderSummary(binding)
+                updatedStreak?.reminder?.let { 
+                    notificationScheduler.scheduleReminder(args.streak.id, args.streak.name, it)
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -633,10 +628,41 @@ class StreakDetailsFragment : Fragment() {
     }
 
     private fun Reminder.toSummary(): String {
-        val daysStr = if (days.isEmpty()) "" else " on " + days.joinToString { idx ->
-            arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")[idx]
+        val timeStr = java.time.LocalTime.parse(time).format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
+        
+        // If all days are selected, show "every day"
+        if (days.size == 7) {
+            return "Every day at $timeStr"
         }
-        return "at ${time.toString()}$daysStr"
+        
+        // Sort days for consistent display
+        val sortedDays = days.sorted()
+        
+        // Find consecutive days
+        val ranges = mutableListOf<Pair<Int, Int>>()
+        var start = sortedDays.first()
+        var prev = start
+        
+        for (i in 1 until sortedDays.size) {
+            if (sortedDays[i] != prev + 1) {
+                ranges.add(Pair(start, prev))
+                start = sortedDays[i]
+            }
+            prev = sortedDays[i]
+        }
+        ranges.add(Pair(start, prev))
+        
+        // Convert ranges to readable format
+        val dayNames = arrayOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        val dayRanges = ranges.map { (start, end) ->
+            when {
+                start == end -> dayNames[start]
+                end == start + 1 -> "${dayNames[start]} and ${dayNames[end]}"
+                else -> "${dayNames[start]} to ${dayNames[end]}"
+            }
+        }
+        
+        return "${dayRanges.joinToString(", ")} at $timeStr"
     }
 
     companion object {
