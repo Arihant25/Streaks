@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.streaks.databinding.FragmentHomeBinding
 import com.example.streaks.ui.adapters.StreaksAdapter
+import androidx.navigation.fragment.findNavController
 
 class HomeFragment : Fragment() {
 
@@ -34,13 +35,19 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        streaksAdapter = StreaksAdapter { streakId, shouldCheck ->
-            if (shouldCheck) {
-                homeViewModel.completeStreak(streakId, requireContext())
-            } else {
-                homeViewModel.uncompleteStreak(streakId, requireContext())
+        streaksAdapter = StreaksAdapter(
+            onStreakToggled = { streakId, shouldCheck ->
+                if (shouldCheck) {
+                    homeViewModel.completeStreak(streakId, requireContext())
+                } else {
+                    homeViewModel.uncompleteStreak(streakId, requireContext())
+                }
+            },
+            onStreakClicked = { streak ->
+                val action = com.example.streaks.ui.home.HomeFragmentDirections.actionHomeToStreakDetails(streak)
+                findNavController().navigate(action)
             }
-        }
+        )
         
         binding.recyclerStreaks.apply {
             layoutManager = LinearLayoutManager(context)

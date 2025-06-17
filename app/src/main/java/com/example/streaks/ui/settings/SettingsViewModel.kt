@@ -87,7 +87,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getStreaksForExportDto(): List<StreakExportDto> {
-        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
         return (streaksLiveData.value ?: emptyList()).map { streak ->
             StreakExportDto(
                 id = streak.id,
@@ -95,9 +94,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 emoji = streak.emoji,
                 frequency = streak.frequency,
                 frequencyCount = streak.frequencyCount,
-                createdDate = streak.createdDate.format(formatter),
-                lastCompletedDate = streak.lastCompletedDate?.format(formatter),
-                currentStreak = streak.currentStreak
+                createdDate = streak.createdDate,
+                lastCompletedDate = streak.lastCompletedDate,
+                currentStreak = streak.currentStreak,
+                completions = streak.completions,
+                reminder = streak.reminder
             )
         }
     }

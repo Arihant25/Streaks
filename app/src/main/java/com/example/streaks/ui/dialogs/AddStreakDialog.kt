@@ -19,7 +19,10 @@ import android.widget.EditText
 import android.text.InputFilter
 
 class AddStreakDialog(
-    private val onStreakAdded: (String, String, FrequencyType, Int) -> Unit
+    private val onStreakAdded: (String, String, FrequencyType, Int) -> Unit,
+    private val isEditMode: Boolean = false,
+    private val initialFrequency: FrequencyType? = null,
+    private val initialFrequencyCount: Int? = null
 ) : DialogFragment() {
 
     private var _binding: DialogAddStreakBinding? = null
@@ -34,6 +37,24 @@ class AddStreakDialog(
         setupEmojiPicker()
         setupFrequencySpinner()
         setupClickListeners()
+        
+        if (isEditMode) {
+            // Prefill frequency and count, and disable editing
+            initialFrequency?.let {
+                val freqIndex = when (it) {
+                    FrequencyType.DAILY -> 0
+                    FrequencyType.WEEKLY -> 1
+                    FrequencyType.MONTHLY -> 2
+                    FrequencyType.YEARLY -> 3
+                }
+                binding.spinnerFrequency.setSelection(freqIndex)
+                binding.spinnerFrequency.isEnabled = false
+            }
+            initialFrequencyCount?.let {
+                binding.editFrequencyCount.setText(it.toString())
+                binding.editFrequencyCount.isEnabled = false
+            }
+        }
         
         return AlertDialog.Builder(requireContext())
             .setView(binding.root)
@@ -62,30 +83,47 @@ class AddStreakDialog(
     }
 
     private fun setupFrequencySpinner() {
-        val frequencies = arrayOf(
+        // Create frequency options array
+        val frequencyOptions = arrayOf(
             getString(R.string.daily),
             getString(R.string.weekly),
             getString(R.string.monthly),
             getString(R.string.yearly)
         )
         
+        // Create and set adapter
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            frequencies
+            frequencyOptions
         )
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerFrequency.adapter = adapter
+        
+        // Set up spinner listener to show/hide frequency count input
         binding.spinnerFrequency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (position == 1 || position == 2 || position == 3) {
-                    binding.inputLayoutCount.visibility = View.VISIBLE
-                } else {
-                    binding.inputLayoutCount.visibility = View.GONE
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                when (position) {
+                    0 -> { // Daily - hide frequency count
+                        binding.inputLayoutCount.visibility = View.GONE
+                        binding.editFrequencyCount.setText("1")
+                    }
+                    1, 2, 3 -> { // Weekly, Monthly, Yearly - show frequency count
+                        binding.inputLayoutCount.visibility = View.VISIBLE
+                        if (binding.editFrequencyCount.text.toString().isEmpty()) {
+                            binding.editFrequencyCount.setText("1")
+                        }
+                    }
                 }
             }
-            override fun onNothingSelected(parent: AdapterView<*>) {}
+            
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
         }
+        
+        // Set default selection to Daily
+        binding.spinnerFrequency.setSelection(0)
     }
 
     private fun setupClickListeners() {

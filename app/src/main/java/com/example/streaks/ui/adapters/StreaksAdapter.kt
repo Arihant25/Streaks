@@ -11,13 +11,14 @@ import com.example.streaks.data.Streak
 import com.example.streaks.databinding.ItemStreakCardBinding
 
 class StreaksAdapter(
-    private val onStreakToggled: (String, Boolean) -> Unit
+    private val onStreakToggled: (String, Boolean) -> Unit,
+    private val onStreakClicked: (Streak) -> Unit
 ) : ListAdapter<Streak, StreaksAdapter.StreakViewHolder>(DiffCallback()) {
 
     class StreakViewHolder(private val binding: ItemStreakCardBinding) : 
         RecyclerView.ViewHolder(binding.root) {
         
-        fun bind(streak: Streak, onToggled: (String, Boolean) -> Unit) {
+        fun bind(streak: Streak, onToggled: (String, Boolean) -> Unit, onClicked: (Streak) -> Unit) {
             binding.emojiIcon.text = streak.emoji
             binding.streakName.text = streak.name
             binding.streakCount.text = if (streak.currentStreak == 0) {
@@ -39,6 +40,10 @@ class StreaksAdapter(
                 binding.completionCircle.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
                 onToggled(streak.id, !streak.isCompletedToday)
             }
+            // Add click listener for the whole card
+            binding.root.setOnClickListener {
+                onClicked(streak)
+            }
         }
     }
 
@@ -52,7 +57,7 @@ class StreaksAdapter(
     }
 
     override fun onBindViewHolder(holder: StreakViewHolder, position: Int) {
-        holder.bind(getItem(position), onStreakToggled)
+        holder.bind(getItem(position), onStreakToggled, onStreakClicked)
     }
 
     private class DiffCallback : DiffUtil.ItemCallback<Streak>() {

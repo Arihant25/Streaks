@@ -31,18 +31,19 @@ class StreakRepository {
                 val exportList: List<StreakExportDto> = gson.fromJson(reader, type)
                 val today = LocalDate.now()
                 val streaks = exportList.map { dto ->
-                    val lastCompleted = dto.lastCompletedDate?.let { LocalDate.parse(it, formatter) }
+                    val lastCompleted = dto.lastCompletedDate
                     Streak(
                         id = dto.id,
                         name = dto.name,
                         emoji = dto.emoji,
                         frequency = dto.frequency,
                         frequencyCount = dto.frequencyCount,
-                        createdDate = LocalDate.parse(dto.createdDate, formatter),
+                        createdDate = dto.createdDate,
                         lastCompletedDate = lastCompleted,
                         currentStreak = dto.currentStreak,
-                        isCompletedToday = lastCompleted == today,
-                        completions = dto.completions?.map { LocalDate.parse(it, formatter) } ?: emptyList()
+                        isCompletedToday = lastCompleted == today.format(formatter),
+                        completions = dto.completions ?: emptyList(),
+                        reminder = dto.reminder
                     )
                 }
                 _streaks.value = streaks
@@ -62,10 +63,11 @@ class StreakRepository {
                     emoji = streak.emoji,
                     frequency = streak.frequency,
                     frequencyCount = streak.frequencyCount,
-                    createdDate = streak.createdDate.format(formatter),
-                    lastCompletedDate = streak.lastCompletedDate?.format(formatter),
+                    createdDate = streak.createdDate,
+                    lastCompletedDate = streak.lastCompletedDate,
                     currentStreak = streak.currentStreak,
-                    completions = streak.completions.map { it.format(formatter) }
+                    completions = streak.completions,
+                    reminder = streak.reminder
                 )
             } ?: emptyList()
             FileWriter(file, false).use { writer ->
@@ -77,17 +79,19 @@ class StreakRepository {
     }
 
     fun addStreak(name: String, emoji: String, frequency: FrequencyType, frequencyCount: Int, context: Context? = null) {
+        val todayStr = LocalDate.now().format(formatter)
         val newStreak = Streak(
             id = UUID.randomUUID().toString(),
             name = name,
             emoji = emoji,
             frequency = frequency,
             frequencyCount = frequencyCount,
-            createdDate = LocalDate.now(),
+            createdDate = todayStr,
             lastCompletedDate = null,
             currentStreak = 0,
             isCompletedToday = false,
-            completions = emptyList()
+            completions = emptyList(),
+            reminder = null
         )
         val currentStreaks = _streaks.value?.toMutableList() ?: mutableListOf()
         currentStreaks.add(newStreak)
@@ -101,14 +105,16 @@ class StreakRepository {
         if (index != -1) {
             val streak = currentStreaks[index]
             val today = LocalDate.now()
+            val todayStr = today.format(formatter)
             if (streak.isCompletedToday) return // Already completed today
-            val updatedCompletions = streak.completions + today
+            val updatedCompletions = streak.completions + todayStr
             val (shouldIncrement, filteredCompletions) = checkAndUpdateStreak(streak, updatedCompletions, today)
             val updatedStreak = streak.copy(
-                lastCompletedDate = today,
+                lastCompletedDate = todayStr,
                 currentStreak = if (shouldIncrement) streak.currentStreak + 1 else streak.currentStreak,
                 isCompletedToday = true,
-                completions = filteredCompletions
+                completions = filteredCompletions,
+                reminder = null
             )
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
@@ -122,13 +128,15 @@ class StreakRepository {
         if (index != -1) {
             val streak = currentStreaks[index]
             val today = LocalDate.now()
-            val updatedCompletions = streak.completions.filter { it != today }
+            val todayStr = today.format(formatter)
+            val updatedCompletions = streak.completions.filter { it != todayStr }
             val (shouldDecrement, filteredCompletions) = checkAndUpdateStreak(streak, updatedCompletions, today, isUndo = true)
             val updatedStreak = streak.copy(
                 lastCompletedDate = null,
                 currentStreak = if (shouldDecrement && streak.currentStreak > 0) streak.currentStreak - 1 else streak.currentStreak,
                 isCompletedToday = false,
-                completions = filteredCompletions
+                completions = filteredCompletions,
+                reminder = null
             )
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
@@ -136,28 +144,78 @@ class StreakRepository {
         }
     }
 
-    private fun checkAndUpdateStreak(streak: Streak, completions: List<LocalDate>, today: LocalDate, isUndo: Boolean = false): Pair<Boolean, List<LocalDate>> {
+    private fun checkAndUpdateStreak(streak: Streak, completions: List<String>, today: LocalDate, isUndo: Boolean = false): Pair<Boolean, List<String>> {
+        val completionsAsDate = completions.map { LocalDate.parse(it, formatter) }
         val filteredCompletions = when (streak.frequency) {
-            FrequencyType.DAILY -> completions.filter { it == today }
+            FrequencyType.DAILY -> completionsAsDate.filter { it == today }
             FrequencyType.WEEKLY -> {
                 val weekFields = WeekFields.of(Locale.getDefault())
                 val weekOfYear = today.get(weekFields.weekOfWeekBasedYear())
-                completions.filter { it.get(weekFields.weekOfWeekBasedYear()) == weekOfYear && it.year == today.year }
+                completionsAsDate.filter { it.get(weekFields.weekOfWeekBasedYear()) == weekOfYear && it.year == today.year }
             }
-            FrequencyType.MONTHLY -> completions.filter { it.month == today.month && it.year == today.year }
-            FrequencyType.YEARLY -> completions.filter { it.year == today.year }
+            FrequencyType.MONTHLY -> completionsAsDate.filter { it.month == today.month && it.year == today.year }
+            FrequencyType.YEARLY -> completionsAsDate.filter { it.year == today.year }
         }
         val count = filteredCompletions.size
+        val filteredCompletionsStr = filteredCompletions.map { it.format(formatter) }
         return if (!isUndo) {
-            Pair(count >= streak.frequencyCount, filteredCompletions)
+            Pair(count >= streak.frequencyCount, filteredCompletionsStr)
         } else {
-            Pair(count < streak.frequencyCount, filteredCompletions)
+            Pair(count < streak.frequencyCount, filteredCompletionsStr)
         }
     }
 
     fun setStreaksFromImport(streaks: List<Streak>, context: Context? = null) {
         _streaks.value = streaks
         context?.let { saveStreaksToFile(it) }
+    }
+
+    fun updateStreakNameEmoji(streakId: String, name: String, emoji: String, context: Context? = null) {
+        val currentStreaks = _streaks.value?.toMutableList() ?: return
+        val index = currentStreaks.indexOfFirst { it.id == streakId }
+        if (index != -1) {
+            val streak = currentStreaks[index]
+            val updatedStreak = streak.copy(name = name, emoji = emoji)
+            currentStreaks[index] = updatedStreak
+            _streaks.value = currentStreaks
+            context?.let { saveStreaksToFile(it) }
+        }
+    }
+
+    fun deleteStreak(streakId: String, context: Context? = null) {
+        val currentStreaks = _streaks.value?.toMutableList() ?: return
+        val index = currentStreaks.indexOfFirst { it.id == streakId }
+        if (index != -1) {
+            currentStreaks.removeAt(index)
+            _streaks.value = currentStreaks
+            context?.let { saveStreaksToFile(it) }
+        }
+    }
+
+    fun setStreakReminder(streakId: String, reminder: Reminder, context: Context? = null): Streak? {
+        val currentStreaks = _streaks.value?.toMutableList() ?: return null
+        val index = currentStreaks.indexOfFirst { it.id == streakId }
+        if (index != -1) {
+            val streak = currentStreaks[index]
+            val updatedStreak = streak.copy(reminder = reminder)
+            currentStreaks[index] = updatedStreak
+            _streaks.value = currentStreaks
+            context?.let { saveStreaksToFile(it) }
+            return updatedStreak
+        }
+        return null
+    }
+
+    fun removeStreakReminder(streakId: String, context: Context? = null) {
+        val currentStreaks = _streaks.value?.toMutableList() ?: return
+        val index = currentStreaks.indexOfFirst { it.id == streakId }
+        if (index != -1) {
+            val streak = currentStreaks[index]
+            val updatedStreak = streak.copy(reminder = null)
+            currentStreaks[index] = updatedStreak
+            _streaks.value = currentStreaks
+            context?.let { saveStreaksToFile(it) }
+        }
     }
 
     companion object {

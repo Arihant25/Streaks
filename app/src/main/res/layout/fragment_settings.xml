@@ -56,9 +56,7 @@
         android:textColor="@color/black"
         app:layout_constraintTop_toBottomOf="@id/btn_add_streak"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <Switch
+        app:layout_constraintEnd_toEndOf="parent" />    <Switch
         android:id="@+id/switch_enable_notifications"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -72,6 +70,42 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <TextView
+        android:id="@+id/text_notification_info"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/notification_settings_info"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        app:layout_constraintTop_toBottomOf="@id/switch_enable_notifications"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />    <Button
+        android:id="@+id/btn_notification_channel_settings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/notification_channel_settings"
+        android:textSize="12sp"
+        style="?android:attr/buttonBarButtonStyle"
+        app:layout_constraintTop_toBottomOf="@id/text_notification_info"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btn_test_notification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/test_notification"
+        android:textSize="12sp"
+        style="?android:attr/buttonBarButtonStyle"
+        app:layout_constraintTop_toBottomOf="@id/text_notification_info"
+        app:layout_constraintStart_toEndOf="@id/btn_notification_channel_settings" />
+
     <!-- Theme Selector -->
     <TextView
         android:id="@+id/text_theme"
@@ -84,7 +118,7 @@
         android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        app:layout_constraintTop_toBottomOf="@id/switch_enable_notifications"
+        app:layout_constraintTop_toBottomOf="@id/btn_test_notification"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

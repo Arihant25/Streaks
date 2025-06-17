@@ -1,6 +1,8 @@
 package com.example.streaks.ui.settings
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -12,6 +14,8 @@ import android.widget.Toast
 import android.widget.AdapterView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +24,7 @@ import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.example.streaks.utils.PermissionHelper
 import com.example.streaks.databinding.FragmentSettingsBinding
 import com.example.streaks.ui.dialogs.AddStreakDialog
 import com.example.streaks.R
@@ -90,9 +95,20 @@ class SettingsFragment : Fragment() {
 
         setupClickListeners()
         setupNotificationSwitch()
+        setupNotificationChannelButton()
+        setupTestNotificationButton()
         setupThemeSpinner()
         setupExportImportButtons()
         observeSettings()
+
+        // Request notification permission if enabled but not granted
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val notificationsEnabled = binding.switchEnableNotifications.isChecked
+            val permissionGranted = requireContext().checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (notificationsEnabled && !permissionGranted) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
         return binding.root
     }
@@ -106,12 +122,25 @@ class SettingsFragment : Fragment() {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
         }
-    }
-
-    private fun setupNotificationSwitch() {
+    }    private fun setupNotificationSwitch() {
         binding.switchEnableNotifications.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            if (isChecked) {
+                // Check notification permission
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    val permissionGranted = requireContext().checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (!permissionGranted) {
+                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        return@setOnCheckedChangeListener
+                    }
+                }
+                
+                // Check exact alarm permission
+                if (!PermissionHelper.checkExactAlarmPermission(requireContext())) {
+                    PermissionHelper.requestExactAlarmPermission(this)
+                }
+                
+                // Check battery optimization
+                PermissionHelper.checkAndRequestBatteryOptimization(this)
             }
             settingsViewModel.setNotificationEnabled(isChecked)
         }
@@ -201,18 +230,21 @@ class SettingsFragment : Fragment() {
             val streakExportListType = object : TypeToken<List<StreakExportDto>>() {}.type
             val streakExportList: List<StreakExportDto> = Gson().fromJson(streaksJson, streakExportListType)
             if (streakExportList.isNullOrEmpty()) throw Exception("No streaks found or wrong format")
-            val formatter = DateTimeFormatter.ISO_LOCAL_DATE
             val streaks = streakExportList.map { dto ->
+                val todayStr = java.time.LocalDate.now().toString()
+                val isCompletedToday = dto.lastCompletedDate == todayStr
                 Streak(
                     id = dto.id,
                     name = dto.name,
                     emoji = dto.emoji,
                     frequency = dto.frequency,
                     frequencyCount = dto.frequencyCount,
-                    createdDate = LocalDate.parse(dto.createdDate, formatter),
-                    lastCompletedDate = dto.lastCompletedDate?.let { LocalDate.parse(it, formatter) },
+                    createdDate = dto.createdDate,
+                    lastCompletedDate = dto.lastCompletedDate,
                     currentStreak = dto.currentStreak,
-                    isCompletedToday = false // default
+                    isCompletedToday = isCompletedToday,
+                    completions = dto.completions ?: emptyList(),
+                    reminder = dto.reminder
                 )
             }
             
@@ -225,9 +257,15 @@ class SettingsFragment : Fragment() {
                 binding.switchEnableNotifications.isChecked = notifications
                 applyTheme(theme)
             }
-            
-            // Restore streaks
+              // Restore streaks
             settingsViewModel.setStreaksFromImport(streaks)
+            // Schedule reminders for imported streaks using new NotificationScheduler
+            val scheduler = com.example.streaks.utils.NotificationScheduler(requireContext())
+            streaks.forEach { streak ->
+                streak.reminder?.let { reminder ->
+                    scheduler.scheduleReminder(streak.id, streak.name, reminder)
+                }
+            }
             Toast.makeText(requireContext(), R.string.import_success, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(requireContext(), R.string.import_failed, Toast.LENGTH_SHORT).show()
@@ -258,10 +296,68 @@ class SettingsFragment : Fragment() {
     }
 
     private fun showAddStreakDialog() {
-        val dialog = AddStreakDialog { name, emoji, frequency, frequencyCount ->
-            settingsViewModel.addStreak(name, emoji, frequency, frequencyCount)
-        }
+        val dialog = AddStreakDialog(
+            onStreakAdded = { name, emoji, frequency, frequencyCount ->
+                settingsViewModel.addStreak(name, emoji, frequency, frequencyCount)
+            },
+            isEditMode = false
+        )
         dialog.show(parentFragmentManager, "AddStreakDialog")
+    }
+
+    private fun setupNotificationChannelButton() {
+        binding.btnNotificationChannelSettings.setOnClickListener {
+            PermissionHelper.showNotificationChannelSettings(this)
+        }
+    }
+
+    private fun setupTestNotificationButton() {
+        binding.btnTestNotification.setOnClickListener {
+            sendTestNotification()
+        }
+    }
+      private fun sendTestNotification() {
+        // Create notification channel
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "streak_reminder_channel",
+                "Streak Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifications for streak reminders"
+                enableVibration(true)
+                enableLights(true)
+            }
+            val notificationManager = requireContext().getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+        
+        // Check notification permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionGranted = requireContext().checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!permissionGranted) {
+                Toast.makeText(requireContext(), "Notification permission required", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+        
+        val notification = NotificationCompat.Builder(requireContext(), "streak_reminder_channel")
+            .setSmallIcon(com.example.streaks.R.drawable.ic_notification_24)
+            .setContentTitle("Test Notification")
+            .setContentText("This is a test notification to verify that notifications are working!")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 250, 250, 250))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .build()
+
+        try {
+            val notificationManager = NotificationManagerCompat.from(requireContext())
+            notificationManager.notify(12345, notification)
+            Toast.makeText(requireContext(), "Test notification sent!", Toast.LENGTH_SHORT).show()
+        } catch (e: SecurityException) {
+            Toast.makeText(requireContext(), "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroyView() {
