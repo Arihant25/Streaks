@@ -33,6 +33,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.google.android.material.transition.platform.MaterialContainerTransform
 import com.example.streaks.R
+import android.widget.LinearLayout
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.TextView
+import android.widget.TimePicker
 
 class StreakDetailsFragment : Fragment() {
     private val args: StreakDetailsFragmentArgs by navArgs()
@@ -83,17 +88,6 @@ class StreakDetailsFragment : Fragment() {
         // --- Reminder section ---
         this.reminder = streak.reminder
         updateReminderSummary(binding)
-        if (reminder != null) {
-            val removeBtn = android.widget.Button(requireContext())
-            removeBtn.text = "Remove Reminder"
-            removeBtn.setOnClickListener {
-                homeViewModel.removeStreakReminder(streak.id, requireContext())
-                this.reminder = null
-                updateReminderSummary(binding)
-                notificationScheduler.cancelReminder(streak.id)
-            }
-            (binding.reminderSection as android.widget.LinearLayout).addView(removeBtn)
-        }
         binding.buttonSetReminder.setOnClickListener {
             showReminderDialog(binding)
         }
@@ -534,49 +528,108 @@ class StreakDetailsFragment : Fragment() {
 
     private fun updateReminderSummary(binding: FragmentStreakDetailsBinding) {
         binding.textReminderSummary.text = reminder?.toSummary() ?: "No reminder set"
+        binding.buttonSetReminder.text = if (reminder != null) "Edit Reminder" else "Set Reminder"
     }
 
     private fun showReminderDialog(binding: FragmentStreakDetailsBinding) {
-        var selectedTime = java.time.LocalTime.of(8, 0)
-        val selectedDays = mutableSetOf<Int>()
-        val daysOfWeek = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        var selectedTime = reminder?.let { java.time.LocalTime.parse(it.time) } ?: java.time.LocalTime.of(8, 0)
+        val daysOfWeek = arrayOf("M", "T", "W", "T", "F", "S", "S")
         val checkedDays = BooleanArray(7) { false }
+        
+        // Pre-check days if reminder exists
+        reminder?.days?.forEach { day ->
+            checkedDays[day] = true
+        }
 
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle("Set Reminder")
-        builder.setPositiveButton("Pick Time") { dialog, _ ->
-            AlertDialog.Builder(requireContext())
-                .setTitle("Select Days")
-                .setMultiChoiceItems(daysOfWeek, checkedDays) { _, which, isChecked ->
+        val dialogView = layoutInflater.inflate(R.layout.dialog_reminder, null)
+        val daysContainer = dialogView.findViewById<LinearLayout>(R.id.days_container)
+        val timePicker = dialogView.findViewById<TimePicker>(R.id.time_picker)
+        val removeButton = dialogView.findViewById<Button>(R.id.button_remove_reminder)
+        
+        // Set initial time
+        timePicker.hour = selectedTime.hour
+        timePicker.minute = selectedTime.minute
+        
+        // Create day circles
+        daysOfWeek.forEachIndexed { index, day ->
+            val dayButton = TextView(requireContext()).apply {
+                text = day
+                textSize = 14f
+                setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurface))
+                background = ContextCompat.getDrawable(requireContext(), R.drawable.day_circle_background)
+                isSelected = checkedDays[index]
+                if (isSelected) {
+                    setTextColor(resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnPrimary))
+                }
+                
+                // Set fixed size for the circle
+                val size = resources.getDimensionPixelSize(R.dimen.day_circle_size)
+                layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                    marginEnd = resources.getDimensionPixelSize(R.dimen.margin_small)
+                }
+                
+                gravity = android.view.Gravity.CENTER
+                textAlignment = android.view.View.TEXT_ALIGNMENT_CENTER
+                
+                setOnClickListener {
+                    isSelected = !isSelected
+                    setTextColor(if (isSelected) {
+                        resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnPrimary)
+                    } else {
+                        resolveThemeColor(requireContext(), com.google.android.material.R.attr.colorOnSurface)
+                    })
+                    checkedDays[index] = isSelected
+                }
+            }
+            daysContainer.addView(dayButton)
+        }
 
-                    checkedDays[which] = isChecked
+        // Show/hide remove button based on whether reminder exists
+        removeButton.visibility = if (reminder != null) View.VISIBLE else View.GONE
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Set Reminder")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val selectedDays = mutableListOf<Int>()
+                checkedDays.forEachIndexed { index, checked ->
+                    if (checked) selectedDays.add(index)
                 }
-                .setPositiveButton("OK") { _, _ ->
-                    selectedDays.clear()
-                    checkedDays.forEachIndexed { idx, checked -> if (checked) selectedDays.add(idx) }
-                    showTimePicker(binding, selectedTime, selectedDays.toList())
+                
+                selectedTime = java.time.LocalTime.of(timePicker.hour, timePicker.minute)
+                
+                if (selectedDays.isEmpty()) {
+                    // If no days selected, treat as daily reminder
+                    val reminder = Reminder(selectedTime.toString(), emptyList())
+                    val updatedStreak = homeViewModel.setStreakReminder(args.streak.id, reminder, requireContext())
+                    this.reminder = updatedStreak?.reminder
+                    updateReminderSummary(binding)
+                    updatedStreak?.reminder?.let { 
+                        notificationScheduler.scheduleReminder(args.streak.id, args.streak.name, it)
+                    }
+                } else {
+                    val reminder = Reminder(selectedTime.toString(), selectedDays)
+                    val updatedStreak = homeViewModel.setStreakReminder(args.streak.id, reminder, requireContext())
+                    this.reminder = updatedStreak?.reminder
+                    updateReminderSummary(binding)
+                    updatedStreak?.reminder?.let { 
+                        notificationScheduler.scheduleReminder(args.streak.id, args.streak.name, it)
+                    }
                 }
-                .setNegativeButton("Cancel", null)
-                .show()
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        // Set up remove button
+        removeButton.setOnClickListener {
+            homeViewModel.removeStreakReminder(args.streak.id, requireContext())
+            this.reminder = null
+            updateReminderSummary(binding)
+            notificationScheduler.cancelReminder(args.streak.id)
             dialog.dismiss()
         }
-        builder.setNegativeButton("Cancel", null)
-        builder.show()
-    }
 
-    private fun showTimePicker(binding: FragmentStreakDetailsBinding, initialTime: java.time.LocalTime, days: List<Int>) {
-        TimePickerDialog(requireContext(), { _, hour, minute ->
-
-            val selectedTime = java.time.LocalTime.of(hour, minute)
-            val reminder = Reminder(selectedTime.toString(), days)
-            val updatedStreak = homeViewModel.setStreakReminder(args.streak.id, reminder, requireContext())
-            this.reminder = updatedStreak?.reminder
-            updateReminderSummary(binding)
-            // Use new WorkManager-based scheduling
-            updatedStreak?.reminder?.let { 
-                notificationScheduler.scheduleReminder(args.streak.id, args.streak.name, it)
-            }
-        }, initialTime.hour, initialTime.minute, true).show()
+        dialog.show()
     }
 
     private fun Reminder.toSummary(): String {
