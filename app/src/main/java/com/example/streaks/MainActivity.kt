@@ -1,14 +1,13 @@
 package com.example.streaks
 
 import android.os.Bundle
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
-import androidx.activity.viewModels
-import com.example.streaks.ui.settings.SettingsViewModel
-
 import androidx.navigation.ui.setupWithNavController
 import com.example.streaks.databinding.ActivityMainBinding
+import com.example.streaks.ui.settings.SettingsViewModel
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
 
