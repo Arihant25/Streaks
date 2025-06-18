@@ -1,8 +1,11 @@
 package com.example.streaks.data
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.streaks.widgets.StreaksWidgetProvider
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -234,7 +237,19 @@ class StreakRepository {
         if (index != -1) {
             currentStreaks.removeAt(index)
             _streaks.value = currentStreaks
-            context?.let { saveStreaksToFile(it) }
+            context?.let {
+                saveStreaksToFile(it)
+                // Update widget
+                val intent = android.content.Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+                intent.component = ComponentName(it, StreaksWidgetProvider::class.java)
+                val ids =
+                        AppWidgetManager.getInstance(it)
+                                .getAppWidgetIds(
+                                        ComponentName(it, StreaksWidgetProvider::class.java)
+                                )
+                intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                it.sendBroadcast(intent)
+            }
         }
     }
 

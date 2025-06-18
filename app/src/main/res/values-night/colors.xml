@@ -8,4 +8,5 @@
     <color name="gray_medium">#FF2C2C2C</color> <!-- Medium dark gray for cards -->
     <color name="gray_dark">#FFB0B0B0</color> <!-- Light gray for text/icons -->
     <color name="success_green">#FF4CAF50</color> <!-- Keep success color vibrant -->
+    <color name="widget_background">#000000</color>
 </resources> 

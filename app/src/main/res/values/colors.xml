@@ -16,4 +16,5 @@
     <color name="neon_red">#F93827</color>
     <color name="neon_pink">#FF55BB</color>
     <color name="neon_cyan">#A3D8FF</color>
+    <color name="widget_background">#FFFFFF</color>
 </resources>
