@@ -51,6 +51,27 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Color Selection Grid -->
+    <TextView
+        android:id="@+id/text_select_color"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Color"
+        android:textSize="14sp"
+        android:textColor="@color/gray_dark"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp" />
+
+    <GridLayout
+        android:id="@+id/color_grid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:rowCount="2"
+        android:columnCount="4"
+        android:layout_marginBottom="16dp" />
+
     <!-- Streak Name -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/input_layout_name"

@@ -19,19 +19,30 @@ class HomeViewModel : ViewModel() {
         repository.uncompleteStreak(streakId, context)
     }
 
-    fun updateStreakNameEmoji(streakId: String, name: String, emoji: String, context: android.content.Context) {
-        repository.updateStreakNameEmoji(streakId, name, emoji, context)
-    }
 
     fun deleteStreak(streakId: String, context: android.content.Context) {
         repository.deleteStreak(streakId, context)
     }
 
-    fun setStreakReminder(streakId: String, reminder: com.example.streaks.data.Reminder, context: android.content.Context): com.example.streaks.data.Streak? {
+    fun setStreakReminder(
+            streakId: String,
+            reminder: com.example.streaks.data.Reminder,
+            context: android.content.Context
+    ): com.example.streaks.data.Streak? {
         return repository.setStreakReminder(streakId, reminder, context)
     }
 
     fun removeStreakReminder(streakId: String, context: android.content.Context) {
         repository.removeStreakReminder(streakId, context)
+    }
+
+    fun updateStreakNameEmojiColor(
+            streakId: String,
+            name: String,
+            emoji: String,
+            color: String,
+            context: android.content.Context
+    ) {
+        repository.updateStreakNameEmojiColor(streakId, name, emoji, color, context)
     }
 }
