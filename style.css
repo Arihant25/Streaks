@@ -1,0 +1,163 @@
+/***** Light mode *****/
+:root {
+    --color-bg: #fff;
+    --color-text: #000;
+    --color-accent: #FF6B35;
+    --color-accent-dark: #FF8B3D;
+    --color-card: #f7f7fa;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--color-bg);
+    margin: 0;
+    padding: 0;
+    color: var(--color-text);
+}
+
+.container {
+    display: flex;
+    max-width: 900px;
+    margin: 3rem auto 2rem auto;
+    background: var(--color-card);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+}
+
+.left-col,
+.right-col {
+    flex: 1 1 50%;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.left-col {
+    background: var(--color-accent);
+    color: #fff;
+    align-items: center;
+    text-align: center;
+}
+
+.left-col h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.tagline {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.download-btn {
+    display: inline-block;
+    background: #fff;
+    color: var(--color-accent);
+    border: none;
+    border-radius: 24px;
+    padding: 0.7rem 2rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    transition: background 0.2s, color 0.2s;
+}
+
+.download-btn:hover {
+    background: var(--color-accent-dark);
+    color: #fff;
+}
+
+.right-col {
+    background: var(--color-card);
+    color: var(--color-text);
+}
+
+.right-col h2 {
+    color: var(--color-accent);
+    margin-top: 0;
+}
+
+.right-col ul {
+    margin-left: 1.2rem;
+    padding-left: 0;
+}
+
+.right-col li {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+footer {
+    text-align: center;
+    color: #888;
+    margin: 2rem 0 1rem 0;
+    font-size: 0.95rem;
+}
+
+/***** Responsive: stack columns on mobile *****/
+@media (max-width: 800px) {
+    .container {
+        flex-direction: column;
+        margin: 1.5rem 0.5rem;
+    }
+
+    .left-col,
+    .right-col {
+        padding: 2rem 1rem;
+    }
+}
+
+/***** Dark mode *****/
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-bg: #121212;
+        --color-text: #fff;
+        --color-accent: #FF6B35;
+        --color-accent-dark: #FF9E7A;
+        --color-card: #232323;
+    }
+
+    .left-col {
+        background: var(--color-accent);
+        color: #fff;
+    }
+
+    .right-col {
+        background: var(--color-card);
+        color: var(--color-text);
+    }
+
+    footer {
+        color: #bbb;
+    }
+
+    .download-btn {
+        background: #232323;
+        color: var(--color-accent);
+    }
+
+    .download-btn:hover {
+        background: var(--color-accent-dark);
+        color: #fff;
+    }
+
+    .app-logo {
+        border: 2.5px solid #232323;
+        background: #232323;
+    }
+}
+
+.app-logo {
+    display: block;
+    margin: 0 auto 1.2rem auto;
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+    border: 2.5px solid #fff;
+    background: #f7f7fa;
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+}
