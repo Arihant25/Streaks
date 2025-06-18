@@ -24,19 +24,20 @@ data class Streak(
         val isCompletedToday: Boolean = false,
         val completions: List<String> = emptyList(), // Store as ISO strings
         val reminder: Reminder? = null,
-        val color: String = "#FF9900" // Default to neon orange
+        val color: String = "#FF9900", // Default to neon orange
+        val position: Int = Int.MAX_VALUE // New field for ordering
 ) : Parcelable {
-    fun getCreatedDate(): LocalDate = LocalDate.parse(createdDate)
-    fun getLastCompletedDate(): LocalDate? = lastCompletedDate?.let { LocalDate.parse(it) }
-    fun asLocalDateCompletions(): List<LocalDate> = completions.map { LocalDate.parse(it) }
+        fun getCreatedDate(): LocalDate = LocalDate.parse(createdDate)
+        fun getLastCompletedDate(): LocalDate? = lastCompletedDate?.let { LocalDate.parse(it) }
+        fun asLocalDateCompletions(): List<LocalDate> = completions.map { LocalDate.parse(it) }
 }
 
 @Parcelize
 enum class FrequencyType : Parcelable {
-    DAILY,
-    WEEKLY,
-    MONTHLY,
-    YEARLY
+        DAILY,
+        WEEKLY,
+        MONTHLY,
+        YEARLY
 }
 
 data class StreakExportDto(
@@ -51,5 +52,6 @@ data class StreakExportDto(
         val bestStreak: Int = 0,
         val completions: List<String> = emptyList(),
         val reminder: Reminder? = null,
-        val color: String = "#FF9900" // Default to neon orange
+        val color: String = "#FF9900", // Default to neon orange
+        val position: Int = Int.MAX_VALUE // New field for ordering
 )

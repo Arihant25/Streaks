@@ -19,7 +19,6 @@ class HomeViewModel : ViewModel() {
         repository.uncompleteStreak(streakId, context)
     }
 
-
     fun deleteStreak(streakId: String, context: android.content.Context) {
         repository.deleteStreak(streakId, context)
     }
@@ -44,5 +43,9 @@ class HomeViewModel : ViewModel() {
             context: android.content.Context
     ) {
         repository.updateStreakNameEmojiColor(streakId, name, emoji, color, context)
+    }
+
+    fun reorderStreaks(newOrder: List<String>, context: android.content.Context) {
+        repository.reorderStreaks(newOrder, context)
     }
 }

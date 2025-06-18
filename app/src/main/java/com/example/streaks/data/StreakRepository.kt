@@ -46,7 +46,8 @@ class StreakRepository {
                                     isCompletedToday = lastCompleted == today.format(formatter),
                                     completions = dto.completions ?: emptyList(),
                                     reminder = dto.reminder,
-                                    color = dto.color ?: "#FF9900"
+                                    color = dto.color ?: "#FF9900",
+                                    position = dto.position ?: exportList.indexOf(dto)
                             )
                         }
                 _streaks.value = streaks
@@ -73,7 +74,8 @@ class StreakRepository {
                                 bestStreak = streak.bestStreak,
                                 completions = streak.completions,
                                 reminder = streak.reminder,
-                                color = streak.color
+                                color = streak.color,
+                                position = streak.position
                         )
                     }
                             ?: emptyList()
@@ -260,6 +262,15 @@ class StreakRepository {
             _streaks.value = currentStreaks
             context?.let { saveStreaksToFile(it) }
         }
+    }
+
+    fun reorderStreaks(newOrder: List<String>, context: Context? = null) {
+        val currentStreaks = _streaks.value?.toMutableList() ?: return
+        val streakMap = currentStreaks.associateBy { it.id }
+        val reordered =
+                newOrder.mapIndexed { idx, id -> streakMap[id]?.copy(position = idx) ?: return }
+        _streaks.value = reordered
+        context?.let { saveStreaksToFile(it) }
     }
 
     companion object {
