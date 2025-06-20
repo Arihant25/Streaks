@@ -30,7 +30,7 @@
         </activity>
         <receiver android:name=".ui.home.ReminderReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="com.example.streaks.REMINDER_ALARM" />
+                <action android:name="com.arihant.streaks.REMINDER_ALARM" />
             </intent-filter>
         </receiver>
         <receiver android:name=".ui.home.BootReceiver" android:exported="false">

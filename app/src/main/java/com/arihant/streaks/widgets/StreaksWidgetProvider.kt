@@ -1,4 +1,4 @@
-package com.example.streaks.widgets
+package com.arihant.streaks.widgets
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -7,10 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.widget.RemoteViews
-import com.example.streaks.MainActivity
-import com.example.streaks.R
-import com.example.streaks.data.FrequencyType
-import com.example.streaks.data.StreakRepository
+import com.arihant.streaks.MainActivity
+import com.arihant.streaks.R
+import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.data.StreakRepository
 
 class StreaksWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(
@@ -27,16 +27,31 @@ class StreaksWidgetProvider : AppWidgetProvider() {
             val streaks = repository.streaks.value?.sortedBy { it.position } ?: emptyList()
 
             for (i in 0 until 4) {
-                val columnId = context.resources.getIdentifier("streak_column_$i", "id", context.packageName)
-                val iconId = context.resources.getIdentifier("streak_icon_$i", "id", context.packageName)
-                val countId = context.resources.getIdentifier("streak_count_$i", "id", context.packageName)
-                val unitId = context.resources.getIdentifier("streak_unit_$i", "id", context.packageName)
+                val columnId =
+                        context.resources.getIdentifier(
+                                "streak_column_$i",
+                                "id",
+                                context.packageName
+                        )
+                val iconId =
+                        context.resources.getIdentifier("streak_icon_$i", "id", context.packageName)
+                val countId =
+                        context.resources.getIdentifier(
+                                "streak_count_$i",
+                                "id",
+                                context.packageName
+                        )
+                val unitId =
+                        context.resources.getIdentifier("streak_unit_$i", "id", context.packageName)
                 if (i < streaks.size) {
                     val streak = streaks[i]
                     views.setViewVisibility(columnId, android.view.View.VISIBLE)
                     views.setTextViewText(iconId, streak.emoji)
                     views.setTextViewText(countId, streak.currentStreak.toString())
-                    views.setTextViewText(unitId, getUnitLabel(streak.frequency, streak.currentStreak))
+                    views.setTextViewText(
+                            unitId,
+                            getUnitLabel(streak.frequency, streak.currentStreak)
+                    )
                 } else {
                     views.setViewVisibility(columnId, android.view.View.GONE)
                 }

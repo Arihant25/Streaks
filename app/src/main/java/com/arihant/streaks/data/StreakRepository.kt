@@ -1,11 +1,11 @@
-package com.example.streaks.data
+package com.arihant.streaks.data
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.streaks.widgets.StreaksWidgetProvider
+import com.arihant.streaks.widgets.StreaksWidgetProvider
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -88,6 +88,16 @@ class StreakRepository {
         }
     }
 
+    private fun updateWidget(context: Context) {
+        val intent = android.content.Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+        intent.component = ComponentName(context, StreaksWidgetProvider::class.java)
+        val ids =
+                AppWidgetManager.getInstance(context)
+                        .getAppWidgetIds(ComponentName(context, StreaksWidgetProvider::class.java))
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+        context.sendBroadcast(intent)
+    }
+
     fun addStreak(
             name: String,
             emoji: String,
@@ -116,7 +126,10 @@ class StreakRepository {
         val currentStreaks = _streaks.value?.toMutableList() ?: mutableListOf()
         currentStreaks.add(newStreak)
         _streaks.value = currentStreaks
-        context?.let { saveStreaksToFile(it) }
+        context?.let {
+            saveStreaksToFile(it)
+            updateWidget(it)
+        }
     }
 
     fun completeStreak(streakId: String, context: Context? = null) {
@@ -139,12 +152,15 @@ class StreakRepository {
                             currentStreak = newCurrentStreak,
                             bestStreak = newBestStreak,
                             isCompletedToday = true,
-                            completions = filteredCompletions,
+                            completions = updatedCompletions,
                             reminder = null
                     )
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
-            context?.let { saveStreaksToFile(it) }
+            context?.let {
+                saveStreaksToFile(it)
+                updateWidget(it)
+            }
         }
     }
 
@@ -166,12 +182,15 @@ class StreakRepository {
                                             streak.currentStreak - 1
                                     else streak.currentStreak,
                             isCompletedToday = false,
-                            completions = filteredCompletions,
+                            completions = updatedCompletions,
                             reminder = null
                     )
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
-            context?.let { saveStreaksToFile(it) }
+            context?.let {
+                saveStreaksToFile(it)
+                updateWidget(it)
+            }
         }
     }
 
@@ -210,7 +229,10 @@ class StreakRepository {
 
     fun setStreaksFromImport(streaks: List<Streak>, context: Context? = null) {
         _streaks.value = streaks
-        context?.let { saveStreaksToFile(it) }
+        context?.let {
+            saveStreaksToFile(it)
+            updateWidget(it)
+        }
     }
 
     fun updateStreakNameEmojiColor(
@@ -227,7 +249,10 @@ class StreakRepository {
             val updatedStreak = streak.copy(name = name, emoji = emoji, color = color)
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
-            context?.let { saveStreaksToFile(it) }
+            context?.let {
+                saveStreaksToFile(it)
+                updateWidget(it)
+            }
         }
     }
 
@@ -239,16 +264,7 @@ class StreakRepository {
             _streaks.value = currentStreaks
             context?.let {
                 saveStreaksToFile(it)
-                // Update widget
-                val intent = android.content.Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
-                intent.component = ComponentName(it, StreaksWidgetProvider::class.java)
-                val ids =
-                        AppWidgetManager.getInstance(it)
-                                .getAppWidgetIds(
-                                        ComponentName(it, StreaksWidgetProvider::class.java)
-                                )
-                intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
-                it.sendBroadcast(intent)
+                updateWidget(it)
             }
         }
     }
@@ -261,7 +277,10 @@ class StreakRepository {
             val updatedStreak = streak.copy(reminder = reminder)
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
-            context?.let { saveStreaksToFile(it) }
+            context?.let {
+                saveStreaksToFile(it)
+                updateWidget(it)
+            }
             return updatedStreak
         }
         return null
@@ -275,7 +294,10 @@ class StreakRepository {
             val updatedStreak = streak.copy(reminder = null)
             currentStreaks[index] = updatedStreak
             _streaks.value = currentStreaks
-            context?.let { saveStreaksToFile(it) }
+            context?.let {
+                saveStreaksToFile(it)
+                updateWidget(it)
+            }
         }
     }
 
@@ -285,7 +307,10 @@ class StreakRepository {
         val reordered =
                 newOrder.mapIndexed { idx, id -> streakMap[id]?.copy(position = idx) ?: return }
         _streaks.value = reordered
-        context?.let { saveStreaksToFile(it) }
+        context?.let {
+            saveStreaksToFile(it)
+            updateWidget(it)
+        }
     }
 
     companion object {

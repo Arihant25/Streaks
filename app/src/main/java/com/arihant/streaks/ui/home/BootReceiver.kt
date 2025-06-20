@@ -1,10 +1,10 @@
-package com.example.streaks.ui.home
+package com.arihant.streaks.ui.home
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.example.streaks.data.StreakRepository
-import com.example.streaks.utils.NotificationScheduler
+import com.arihant.streaks.data.StreakRepository
+import com.arihant.streaks.utils.NotificationScheduler
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -13,7 +13,7 @@ class BootReceiver : BroadcastReceiver() {
             val repository = StreakRepository.getInstance()
             val scheduler = NotificationScheduler(context)
             val streaks = repository.streaks.value ?: emptyList()
-            
+
             for (streak in streaks) {
                 streak.reminder?.let { reminder ->
                     scheduler.scheduleReminder(streak.id, streak.name, reminder)

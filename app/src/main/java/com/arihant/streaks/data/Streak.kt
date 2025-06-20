@@ -1,4 +1,4 @@
-package com.example.streaks.data
+package com.arihant.streaks.data
 
 import android.os.Parcelable
 import java.time.LocalDate

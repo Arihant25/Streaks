@@ -1,4 +1,4 @@
-package com.example.streaks.ui.adapters
+package com.arihant.streaks.ui.adapters
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,9 +7,10 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.streaks.R
-import com.example.streaks.data.Streak
-import com.example.streaks.databinding.ItemStreakCardBinding
+import com.arihant.streaks.R
+import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.data.Streak
+import com.arihant.streaks.databinding.ItemStreakCardBinding
 
 class StreaksAdapter(
         private val onStreakToggled: (String, Boolean) -> Unit,
@@ -32,8 +33,7 @@ class StreaksAdapter(
                                 } else {
                                         val unit =
                                                 when (streak.frequency) {
-                                                        com.example.streaks.data.FrequencyType
-                                                                .DAILY ->
+                                                        FrequencyType.DAILY ->
                                                                 binding.root.context.resources
                                                                         .getQuantityString(
                                                                                 R.plurals
@@ -41,8 +41,7 @@ class StreaksAdapter(
                                                                                 streak.currentStreak,
                                                                                 streak.currentStreak
                                                                         )
-                                                        com.example.streaks.data.FrequencyType
-                                                                .WEEKLY ->
+                                                        FrequencyType.WEEKLY ->
                                                                 binding.root.context.resources
                                                                         .getQuantityString(
                                                                                 R.plurals
@@ -50,8 +49,7 @@ class StreaksAdapter(
                                                                                 streak.currentStreak,
                                                                                 streak.currentStreak
                                                                         )
-                                                        com.example.streaks.data.FrequencyType
-                                                                .MONTHLY ->
+                                                        FrequencyType.MONTHLY ->
                                                                 binding.root.context.resources
                                                                         .getQuantityString(
                                                                                 R.plurals
@@ -59,8 +57,7 @@ class StreaksAdapter(
                                                                                 streak.currentStreak,
                                                                                 streak.currentStreak
                                                                         )
-                                                        com.example.streaks.data.FrequencyType
-                                                                .YEARLY ->
+                                                        FrequencyType.YEARLY ->
                                                                 binding.root.context.resources
                                                                         .getQuantityString(
                                                                                 R.plurals

@@ -1,4 +1,4 @@
-package com.example.streaks.ui.settings
+package com.arihant.streaks.ui.settings
 
 import android.app.Application
 import android.content.Context
@@ -9,10 +9,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
-import com.example.streaks.data.FrequencyType
-import com.example.streaks.data.Streak
-import com.example.streaks.data.StreakExportDto
-import com.example.streaks.data.StreakRepository
+import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.data.Streak
+import com.arihant.streaks.data.StreakExportDto
+import com.arihant.streaks.data.StreakRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map

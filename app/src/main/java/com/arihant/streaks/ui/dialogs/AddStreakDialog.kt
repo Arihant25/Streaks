@@ -1,4 +1,4 @@
-package com.example.streaks.ui.dialogs
+package com.arihant.streaks.ui.dialogs
 
 import android.app.Dialog
 import android.graphics.Color
@@ -13,9 +13,9 @@ import android.widget.EditText
 import android.widget.GridLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
-import com.example.streaks.R
-import com.example.streaks.data.FrequencyType
-import com.example.streaks.databinding.DialogAddStreakBinding
+import com.arihant.streaks.R
+import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.databinding.DialogAddStreakBinding
 
 class AddStreakDialog(
         private val onStreakAdded: (String, String, FrequencyType, Int, String) -> Unit,

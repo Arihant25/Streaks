@@ -1,4 +1,4 @@
-package com.example.streaks.ui.settings
+package com.arihant.streaks.ui.settings
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -21,12 +21,12 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.streaks.R
-import com.example.streaks.data.Streak
-import com.example.streaks.data.StreakExportDto
-import com.example.streaks.databinding.FragmentSettingsBinding
-import com.example.streaks.ui.dialogs.AddStreakDialog
-import com.example.streaks.utils.PermissionHelper
+import com.arihant.streaks.R
+import com.arihant.streaks.data.Streak
+import com.arihant.streaks.data.StreakExportDto
+import com.arihant.streaks.databinding.FragmentSettingsBinding
+import com.arihant.streaks.ui.dialogs.AddStreakDialog
+import com.arihant.streaks.utils.PermissionHelper
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -103,10 +103,12 @@ class SettingsFragment : Fragment() {
         setupTestNotificationButton()
         setupThemeSpinner()
         setupExportImportButtons()
+        
+    
         observeSettings()
 
         // Request notification permission if enabled but not granted
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val notificationsEnabled = binding.switchEnableNotifications.isChecked
             val permissionGranted =
                     requireContext()
@@ -132,9 +134,10 @@ class SettingsFragment : Fragment() {
     }
     private fun setupNotificationSwitch() {
         binding.switchEnableNotifications.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
+            
+        if (isChecked) {
                 // Check notification permission
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val permissionGranted =
                             requireContext()
                                     .checkSelfPermission(
@@ -284,7 +287,7 @@ class SettingsFragment : Fragment() {
             // Restore streaks
             settingsViewModel.setStreaksFromImport(streaks)
             // Schedule reminders for imported streaks using new NotificationScheduler
-            val scheduler = com.example.streaks.utils.NotificationScheduler(requireContext())
+            val scheduler = com.arihant.streaks.utils.NotificationScheduler(requireContext())
             streaks.forEach { streak ->
                 streak.reminder?.let { reminder ->
                     scheduler.scheduleReminder(streak.id, streak.name, reminder)
@@ -384,7 +387,7 @@ class SettingsFragment : Fragment() {
 
         val notification =
                 NotificationCompat.Builder(requireContext(), "streak_reminder_channel")
-                        .setSmallIcon(com.example.streaks.R.drawable.ic_notification_24)
+                        .setSmallIcon(com.arihant.streaks.R.drawable.ic_notification_24)
                         .setContentTitle("Test Notification")
                         .setContentText(
                                 "This is a test notification to verify that notifications are working!"

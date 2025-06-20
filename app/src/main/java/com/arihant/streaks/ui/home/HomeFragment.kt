@@ -1,4 +1,4 @@
-package com.example.streaks.ui.home
+package com.arihant.streaks.ui.home
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,8 +11,8 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.streaks.databinding.FragmentHomeBinding
-import com.example.streaks.ui.adapters.StreaksAdapter
+import com.arihant.streaks.databinding.FragmentHomeBinding
+import com.arihant.streaks.ui.adapters.StreaksAdapter
 import com.google.android.material.transition.platform.MaterialSharedAxis
 
 class HomeFragment : Fragment() {
@@ -57,7 +57,7 @@ class HomeFragment : Fragment() {
                         },
                         onStreakClicked = { streak, view ->
                             val action =
-                                    com.example.streaks.ui.home.HomeFragmentDirections
+                                    com.arihant.streaks.ui.home.HomeFragmentDirections
                                             .actionHomeToStreakDetails(streak)
                             val extras =
                                     androidx.navigation.fragment.FragmentNavigatorExtras(

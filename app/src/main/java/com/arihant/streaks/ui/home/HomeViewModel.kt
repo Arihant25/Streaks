@@ -1,9 +1,9 @@
-package com.example.streaks.ui.home
+package com.arihant.streaks.ui.home
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import com.example.streaks.data.Streak
-import com.example.streaks.data.StreakRepository
+import com.arihant.streaks.data.Streak
+import com.arihant.streaks.data.StreakRepository
 
 class HomeViewModel : ViewModel() {
 
@@ -25,9 +25,9 @@ class HomeViewModel : ViewModel() {
 
     fun setStreakReminder(
             streakId: String,
-            reminder: com.example.streaks.data.Reminder,
+            reminder: com.arihant.streaks.data.Reminder,
             context: android.content.Context
-    ): com.example.streaks.data.Streak? {
+    ): com.arihant.streaks.data.Streak? {
         return repository.setStreakReminder(streakId, reminder, context)
     }
 
