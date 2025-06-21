@@ -398,9 +398,12 @@ class StreakDetailsFragment : Fragment() {
         ): String {
                 return when (frequency) {
                         com.arihant.streaks.data.FrequencyType.DAILY -> "Every day"
-                        com.arihant.streaks.data.FrequencyType.WEEKLY -> "$count Days a Week"
-                        com.arihant.streaks.data.FrequencyType.MONTHLY -> "$count Days a Month"
-                        com.arihant.streaks.data.FrequencyType.YEARLY -> "$count Days a Year"
+                        com.arihant.streaks.data.FrequencyType.WEEKLY ->
+                                if (count == 1) "$count Day a Week" else "$count Days a Week"
+                        com.arihant.streaks.data.FrequencyType.MONTHLY ->
+                                if (count == 1) "$count Day a Month" else "$count Days a Month"
+                        com.arihant.streaks.data.FrequencyType.YEARLY ->
+                                if (count == 1) "$count Day a Year" else "$count Days a Year"
                 }
         }
 

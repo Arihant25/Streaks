@@ -28,13 +28,21 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         navView.setupWithNavController(navController)
 
-        // Add custom navigation listener for home icon
+        // Add custom navigation listener to prevent reloading when already on the same page
         navView.setOnItemSelectedListener { item ->
+            val currentDestination = navController.currentDestination?.id
+
             when (item.itemId) {
                 R.id.navigation_home -> {
-                    // Pop back to home and clear the back stack
-                    navController.popBackStack(R.id.navigation_home, true)
-                    navController.navigate(R.id.navigation_home)
+                    if (currentDestination != R.id.navigation_home) {
+                        navController.navigate(R.id.navigation_home)
+                    }
+                    true
+                }
+                R.id.navigation_settings -> {
+                    if (currentDestination != R.id.navigation_settings) {
+                        navController.navigate(R.id.navigation_settings)
+                    }
                     true
                 }
                 else -> {
