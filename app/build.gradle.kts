@@ -13,8 +13,8 @@ android {
         applicationId = "com.arihant.streaks"
         minSdk = 31
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1"
+        versionCode = 4
+        versionName = "1.2"
     }
 
     buildTypes {

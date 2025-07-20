@@ -48,4 +48,12 @@ class HomeViewModel : ViewModel() {
     fun reorderStreaks(newOrder: List<String>, context: android.content.Context) {
         repository.reorderStreaks(newOrder, context)
     }
+
+    fun toggleStreakCompletion(
+            streakId: String,
+            date: java.time.LocalDate,
+            context: android.content.Context
+    ) {
+        repository.toggleStreakCompletionForDate(streakId, date, context)
+    }
 }

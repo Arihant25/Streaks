@@ -37,8 +37,8 @@ class AddStreakDialog(
     private val colorOptions =
             listOf(
                     "#FF9900", // neon_orange
-                    "#FFFF00", // neon_yellow
-                    "#B6F500", // neon_green
+                    "#F0F01B", // neon_yellow
+                    "#B1E80D", // neon_green
                     "#0065F8", // neon_blue
                     "#FF2DF1", // neon_purple
                     "#F93827", // neon_red
@@ -113,12 +113,11 @@ class AddStreakDialog(
         binding.cardEmojiPicker.setOnClickListener {
             // Show a simple emoji input dialog
             val input = EditText(requireContext())
-            input.inputType =
-                    android.text.InputType.TYPE_CLASS_TEXT or
-                            android.text.InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE or
-                            android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
             input.hint = if (selectedEmoji == "🔥") "🔥" else ""
             input.setText("") // Do not prefill
+            // Enable emoji support
+            input.imeOptions = EditorInfo.IME_ACTION_DONE
             AlertDialog.Builder(requireContext())
                     .setTitle("Pick Emoji")
                     .setView(input)

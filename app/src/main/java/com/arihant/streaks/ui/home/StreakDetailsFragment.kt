@@ -36,6 +36,9 @@ class StreakDetailsFragment : Fragment() {
         private val homeViewModel: HomeViewModel by activityViewModels()
         private var reminder: Reminder? = null // In-memory for now
         private lateinit var notificationScheduler: NotificationScheduler
+        
+        // Track the currently displayed month for calendar navigation
+        private var currentDisplayMonth: java.time.LocalDate = java.time.LocalDate.now().withDayOfMonth(1)
 
         override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
@@ -76,9 +79,7 @@ class StreakDetailsFragment : Fragment() {
                 binding.yearGraphContainer.layoutParams = yearGraphContainerLayoutParams
 
                 // --- Monthly view ---
-                val monthlyView = createMonthlyView(streak)
-                binding.monthlyViewContainer.removeAllViews()
-                binding.monthlyViewContainer.addView(monthlyView)
+                setupMonthlyViewWithNavigation(binding, streak)
 
                 // --- Reminder section ---
                 this.reminder = streak.reminder
@@ -410,6 +411,7 @@ class StreakDetailsFragment : Fragment() {
         private fun createYearGraphView(streak: com.arihant.streaks.data.Streak): View {
                 val context = requireContext()
                 val completions = streak.asLocalDateCompletions().toSet()
+                
                 val year = java.time.LocalDate.now().year
                 val startDate = java.time.LocalDate.of(year, 1, 1)
                 val endDate = java.time.LocalDate.of(year, 12, 31)
@@ -441,78 +443,104 @@ class StreakDetailsFragment : Fragment() {
                 title.gravity = android.view.Gravity.CENTER
                 container.addView(title)
 
-                val gridContainer = android.widget.LinearLayout(context)
-                gridContainer.orientation = android.widget.LinearLayout.VERTICAL
-
-                val cellSizeDp = 10
+                val cellSizeDp = 12
                 val spaceBetweenCellsDp = 2
                 val cellSizePx = dpToPx(cellSizeDp)
                 val cellMarginPx = dpToPx(spaceBetweenCellsDp / 2)
 
-                // Calculate available width for the grid
-                val displayMetrics = context.resources.displayMetrics
-                val screenWidthPx = displayMetrics.widthPixels
-                val horizontalPadding = dpToPx(32) // 16dp padding on each side
-                val availableWidth = screenWidthPx - horizontalPadding
+                // Create scrollable container for the graph
+                val scrollContainer = android.widget.HorizontalScrollView(context)
+                scrollContainer.layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                scrollContainer.setPadding(0, dpToPx(8), 0, dpToPx(8))
+                scrollContainer.isHorizontalScrollBarEnabled = false  // Hide scrollbar for cleaner look
 
-                // Calculate how many cells can fit in one row
-                val totalCellWidth = cellSizePx + (2 * cellMarginPx)
-                val cellsPerRow = (availableWidth / totalCellWidth).toInt()
+                val gridContainer = android.widget.LinearLayout(context)
+                gridContainer.orientation = android.widget.LinearLayout.HORIZONTAL
+                gridContainer.layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
 
                 val colorEmpty = Color.parseColor("#EBEDF0")
                 val colorCompleted = streakColor
 
-                var currentDate = startDate
-                var currentRow: android.widget.LinearLayout? = null
+                // GitHub-style: organize by weeks (columns) and days of week (rows)
+                // Start from the first Sunday of the year (or before if needed)
+                var weekStartDate = startDate
+                while (weekStartDate.dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                    weekStartDate = weekStartDate.minusDays(1)
+                }
+                
+                var currentWeekStart = weekStartDate
 
-                for (dayIndex in 0 until daysInYear) {
-                        if (dayIndex % cellsPerRow == 0) {
-                                currentRow = android.widget.LinearLayout(context)
-                                currentRow.orientation = android.widget.LinearLayout.HORIZONTAL
-                                val rowParams =
-                                        android.widget.LinearLayout.LayoutParams(
-                                                android.widget.LinearLayout.LayoutParams
-                                                        .MATCH_PARENT,
-                                                android.widget.LinearLayout.LayoutParams
-                                                        .WRAP_CONTENT
-                                        )
-                                if (gridContainer.childCount > 0) {
-                                        rowParams.topMargin = dpToPx(spaceBetweenCellsDp)
-                                }
-                                currentRow.layoutParams = rowParams
-                                gridContainer.addView(currentRow)
-                        }
+                // Create weeks until we cover the entire year
+                while (currentWeekStart <= endDate) {
+                    // Create a column for this week
+                    val weekColumn = android.widget.LinearLayout(context)
+                    weekColumn.orientation = android.widget.LinearLayout.VERTICAL
+                    val columnParams = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    columnParams.setMargins(cellMarginPx, 0, cellMarginPx, 0)
+                    weekColumn.layoutParams = columnParams
 
+                    // Create 7 cells for each day of the week (Sunday to Saturday)
+                    for (dayOfWeek in 0..6) {
+                        val cellDate = currentWeekStart.plusDays(dayOfWeek.toLong())
                         val cellView = android.view.View(context)
-                        val cellParams =
-                                android.widget.LinearLayout.LayoutParams(cellSizePx, cellSizePx)
-                        cellParams.setMargins(
-                                cellMarginPx,
-                                cellMarginPx,
-                                cellMarginPx,
-                                cellMarginPx
-                        )
+                        val cellParams = android.widget.LinearLayout.LayoutParams(cellSizePx, cellSizePx)
+                        cellParams.setMargins(0, cellMarginPx, 0, cellMarginPx)
                         cellView.layoutParams = cellParams
 
-                        if (completions.contains(currentDate)) {
+                        // Only show and fill cells within the current year
+                        if (cellDate.year == year) {
+                            if (completions.contains(cellDate)) {
                                 cellView.setBackgroundColor(colorCompleted)
-                        } else {
+                            } else {
                                 cellView.setBackgroundColor(colorEmpty)
+                            }
+                        } else {
+                            // Make cells outside the year transparent
+                            cellView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
                         }
 
-                        currentRow?.addView(cellView)
-                        currentDate = currentDate.plusDays(1)
-                }
+                        weekColumn.addView(cellView)
+                    }
 
-                container.addView(gridContainer)
+                    gridContainer.addView(weekColumn)
+                    currentWeekStart = currentWeekStart.plusWeeks(1)
+                    
+                    // Stop if we've gone well past the end of the year
+                    if (currentWeekStart.minusDays(6).year > year) {
+                        break
+                    }
+                }
+                
+                scrollContainer.addView(gridContainer)
+
+                container.addView(scrollContainer)
                 return container
         }
 
-        private fun createMonthlyView(streak: com.arihant.streaks.data.Streak): View {
+        private fun setupMonthlyViewWithNavigation(binding: FragmentStreakDetailsBinding, streak: com.arihant.streaks.data.Streak) {
+                refreshMonthlyView(binding, streak)
+        }
+
+        private fun refreshMonthlyView(binding: FragmentStreakDetailsBinding, streak: com.arihant.streaks.data.Streak) {
+                val monthlyView = createMonthlyViewWithNavigation(binding, streak, currentDisplayMonth)
+                binding.monthlyViewContainer.removeAllViews()
+                binding.monthlyViewContainer.addView(monthlyView)
+        }
+
+        private fun createMonthlyViewWithNavigation(binding: FragmentStreakDetailsBinding, streak: com.arihant.streaks.data.Streak, displayDate: java.time.LocalDate = java.time.LocalDate.now()): View {
                 val context = requireContext()
                 val now = java.time.LocalDate.now()
                 val completions = streak.asLocalDateCompletions().toSet()
-                val daysInMonth = now.lengthOfMonth()
+                val daysInMonth = displayDate.lengthOfMonth()
                 val streakColor =
                         try {
                                 android.graphics.Color.parseColor(streak.color)
@@ -520,7 +548,7 @@ class StreakDetailsFragment : Fragment() {
                                 android.graphics.Color.parseColor("#FF9900")
                         }
 
-                val firstOfMonth = now.withDayOfMonth(1)
+                val firstOfMonth = displayDate.withDayOfMonth(1)
                 val firstDayOfWeek =
                         when (firstOfMonth.dayOfWeek) {
                                 java.time.DayOfWeek.SUNDAY -> 0
@@ -533,9 +561,9 @@ class StreakDetailsFragment : Fragment() {
                         }
 
                 val monthName =
-                        now.month.name.lowercase().replaceFirstChar { it.uppercase() } +
+                        displayDate.month.name.lowercase().replaceFirstChar { it.uppercase() } +
                                 " " +
-                                now.year
+                                displayDate.year
                 val container = android.widget.LinearLayout(context)
                 container.orientation = android.widget.LinearLayout.VERTICAL
                 container.setPadding(16, 16, 16, 16)
@@ -546,6 +574,33 @@ class StreakDetailsFragment : Fragment() {
                                 android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                         )
 
+                // Navigation header with arrows and month name
+                val headerLayout = android.widget.LinearLayout(context)
+                headerLayout.orientation = android.widget.LinearLayout.HORIZONTAL
+                headerLayout.gravity = android.view.Gravity.CENTER_VERTICAL
+                headerLayout.layoutParams = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+
+                // Left arrow
+                val leftArrow = android.widget.ImageView(context)
+                leftArrow.setImageResource(R.drawable.ic_arrow_left)
+                leftArrow.contentDescription = getString(R.string.previous_month)
+                leftArrow.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+                
+                // Create ripple effect background
+                val typedValue = android.util.TypedValue()
+                requireContext().theme.resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true)
+                leftArrow.setBackgroundResource(typedValue.resourceId)
+                
+                leftArrow.isClickable = true
+                leftArrow.isFocusable = true
+                leftArrow.layoutParams = android.widget.LinearLayout.LayoutParams(
+                        dpToPx(40),
+                        dpToPx(40)
+                )
+                
                 // Month name
                 val monthText = android.widget.TextView(context)
                 monthText.text = monthName
@@ -557,9 +612,63 @@ class StreakDetailsFragment : Fragment() {
                         )
                 )
                 monthText.typeface = android.graphics.Typeface.DEFAULT_BOLD
-                monthText.setPadding(0, 0, 0, 16)
                 monthText.gravity = android.view.Gravity.CENTER
-                container.addView(monthText)
+                monthText.layoutParams = android.widget.LinearLayout.LayoutParams(
+                        0,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                )
+
+                // Right arrow
+                val rightArrow = android.widget.ImageView(context)
+                rightArrow.setImageResource(R.drawable.ic_arrow_right)
+                rightArrow.contentDescription = getString(R.string.next_month)
+                rightArrow.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+                
+                // Create ripple effect background
+                val typedValueRight = android.util.TypedValue()
+                requireContext().theme.resolveAttribute(android.R.attr.selectableItemBackground, typedValueRight, true)
+                rightArrow.setBackgroundResource(typedValueRight.resourceId)
+                
+                rightArrow.isClickable = true
+                rightArrow.isFocusable = true
+                rightArrow.layoutParams = android.widget.LinearLayout.LayoutParams(
+                        dpToPx(40),
+                        dpToPx(40)
+                )
+
+                // Set click listeners for navigation
+                leftArrow.setOnClickListener {
+                    currentDisplayMonth = currentDisplayMonth.minusMonths(1)
+                    refreshMonthlyView(binding, streak)
+                }
+                
+                rightArrow.setOnClickListener {
+                    currentDisplayMonth = currentDisplayMonth.plusMonths(1)
+                    refreshMonthlyView(binding, streak)
+                }
+
+                headerLayout.addView(leftArrow)
+                headerLayout.addView(monthText)
+                headerLayout.addView(rightArrow)
+                
+                // Hide right arrow if we're at or past the current month
+                val currentMonth = java.time.LocalDate.now().withDayOfMonth(1)
+                rightArrow.visibility = if (displayDate.withDayOfMonth(1) >= currentMonth) {
+                    android.view.View.INVISIBLE
+                } else {
+                    android.view.View.VISIBLE
+                }
+                
+                container.addView(headerLayout)
+
+                // Add some space after header
+                val spacer = android.view.View(context)
+                spacer.layoutParams = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        dpToPx(16)
+                )
+                container.addView(spacer)
 
                 // Days of week header (Sunday first)
                 val daysOfWeek = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -626,7 +735,7 @@ class StreakDetailsFragment : Fragment() {
                                         dayPosition >= firstDayOfWeek && dayNum <= daysInMonth
 
                                 if (shouldShowDay) {
-                                        val date = now.withDayOfMonth(dayNum)
+                                        val date = displayDate.withDayOfMonth(dayNum)
                                         val isCompleted = completions.contains(date)
                                         val isToday = date == now
 
@@ -706,6 +815,15 @@ class StreakDetailsFragment : Fragment() {
                                                 }
                                         }
 
+                                        // Add click listener for date toggling
+                                        dayTv.setOnClickListener {
+                                                showDateToggleConfirmation(date, isCompleted, streak, binding)
+                                        }
+                                        
+                                        // Make the day clickable
+                                        dayTv.isClickable = true
+                                        dayTv.isFocusable = true
+
                                         cell.addView(dayTv)
                                         dayNum++
                                 }
@@ -716,6 +834,48 @@ class StreakDetailsFragment : Fragment() {
 
                 container.addView(calendarGrid)
                 return container
+        }
+
+        private fun showDateToggleConfirmation(
+            date: java.time.LocalDate,
+            isCurrentlyCompleted: Boolean,
+            streak: com.arihant.streaks.data.Streak,
+            binding: FragmentStreakDetailsBinding
+        ) {
+            val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy"))
+            val title = if (isCurrentlyCompleted) getString(R.string.mark_uncompleted) else getString(R.string.mark_completed)
+            val message = if (isCurrentlyCompleted) {
+                getString(R.string.confirm_mark_uncompleted)
+            } else {
+                getString(R.string.confirm_mark_completed)
+            }
+
+            AlertDialog.Builder(requireContext())
+                .setTitle(title)
+                .setMessage("$message\n$dateStr")
+                .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                    toggleDateCompletion(date, isCurrentlyCompleted, streak, binding)
+                }
+                .setNegativeButton(getString(R.string.no), null)
+                .show()
+        }
+
+        private fun toggleDateCompletion(
+            date: java.time.LocalDate,
+            isCurrentlyCompleted: Boolean,
+            streak: com.arihant.streaks.data.Streak,
+            binding: FragmentStreakDetailsBinding
+        ) {
+            // Toggle the completion status
+            homeViewModel.toggleStreakCompletion(streak.id, date, requireContext())
+            
+            // Refresh the view after a short delay to ensure repository has been updated
+            binding.root.postDelayed({
+                // Find the updated streak from the current streaks LiveData
+                homeViewModel.streaks.value?.find { it.id == streak.id }?.let { updatedStreak ->
+                    refreshMonthlyView(binding, updatedStreak)
+                }
+            }, 50)
         }
 
         private fun dpToPx(dp: Int): Int {
