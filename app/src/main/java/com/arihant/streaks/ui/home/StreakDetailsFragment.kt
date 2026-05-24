@@ -468,9 +468,14 @@ class StreakDetailsFragment : Fragment() {
                 val colorCompleted = streakColor
 
                 // GitHub-style: organize by weeks (columns) and days of week (rows)
-                // Start from the first Sunday of the year (or before if needed)
+                val weekStartsMonday = requireContext().getSharedPreferences(
+                    com.arihant.streaks.ui.settings.SettingsViewModel.PREFS_NAME,
+                    android.content.Context.MODE_PRIVATE
+                ).getBoolean(com.arihant.streaks.ui.settings.SettingsViewModel.KEY_WEEK_MONDAY, false)
+
+                val firstWeekDay = if (weekStartsMonday) java.time.DayOfWeek.MONDAY else java.time.DayOfWeek.SUNDAY
                 var weekStartDate = startDate
-                while (weekStartDate.dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                while (weekStartDate.dayOfWeek != firstWeekDay) {
                     weekStartDate = weekStartDate.minusDays(1)
                 }
                 
@@ -541,162 +546,81 @@ class StreakDetailsFragment : Fragment() {
                 val now = java.time.LocalDate.now()
                 val completions = streak.asLocalDateCompletions().toSet()
                 val daysInMonth = displayDate.lengthOfMonth()
-                val streakColor =
-                        try {
-                                android.graphics.Color.parseColor(streak.color)
-                        } catch (e: Exception) {
-                                android.graphics.Color.parseColor("#FF9900")
-                        }
+                val streakColor = try { android.graphics.Color.parseColor(streak.color) } catch (e: Exception) { android.graphics.Color.parseColor("#FF9900") }
+
+                val weekStartsMonday = context.getSharedPreferences(
+                    com.arihant.streaks.ui.settings.SettingsViewModel.PREFS_NAME,
+                    android.content.Context.MODE_PRIVATE
+                ).getBoolean(com.arihant.streaks.ui.settings.SettingsViewModel.KEY_WEEK_MONDAY, false)
 
                 val firstOfMonth = displayDate.withDayOfMonth(1)
-                val firstDayOfWeek =
-                        when (firstOfMonth.dayOfWeek) {
-                                java.time.DayOfWeek.SUNDAY -> 0
-                                java.time.DayOfWeek.MONDAY -> 1
-                                java.time.DayOfWeek.TUESDAY -> 2
-                                java.time.DayOfWeek.WEDNESDAY -> 3
-                                java.time.DayOfWeek.THURSDAY -> 4
-                                java.time.DayOfWeek.FRIDAY -> 5
-                                java.time.DayOfWeek.SATURDAY -> 6
-                        }
+                // Mon=1->0, Tue=2->1, ..., Sun=7->6  (Monday-first)
+                // Sun=7->0, Mon=1->1, ..., Sat=6->6  (Sunday-first)
+                val firstDayOfWeek = if (weekStartsMonday) (firstOfMonth.dayOfWeek.value - 1) % 7
+                                     else firstOfMonth.dayOfWeek.value % 7
 
-                val monthName =
-                        displayDate.month.name.lowercase().replaceFirstChar { it.uppercase() } +
-                                " " +
-                                displayDate.year
+                val monthName = displayDate.month.name.lowercase().replaceFirstChar { it.uppercase() } + " " + displayDate.year
+
                 val container = android.widget.LinearLayout(context)
                 container.orientation = android.widget.LinearLayout.VERTICAL
                 container.setPadding(16, 16, 16, 16)
-                container.setBackgroundColor(ContextCompat.getColor(context, R.color.white))
-                container.layoutParams =
-                        android.widget.LinearLayout.LayoutParams(
-                                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                        )
+                container.setBackgroundColor(androidx.core.content.ContextCompat.getColor(context, R.color.white))
+                container.layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT)
 
-                // Navigation header with arrows and month name
+                // Navigation header
                 val headerLayout = android.widget.LinearLayout(context)
                 headerLayout.orientation = android.widget.LinearLayout.HORIZONTAL
                 headerLayout.gravity = android.view.Gravity.CENTER_VERTICAL
-                headerLayout.layoutParams = android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                )
+                headerLayout.layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT)
 
-                // Left arrow
                 val leftArrow = android.widget.ImageView(context)
                 leftArrow.setImageResource(R.drawable.ic_arrow_left)
                 leftArrow.contentDescription = getString(R.string.previous_month)
                 leftArrow.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
-                
-                // Create ripple effect background
-                val typedValue = android.util.TypedValue()
-                requireContext().theme.resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true)
-                leftArrow.setBackgroundResource(typedValue.resourceId)
-                
-                leftArrow.isClickable = true
-                leftArrow.isFocusable = true
-                leftArrow.layoutParams = android.widget.LinearLayout.LayoutParams(
-                        dpToPx(40),
-                        dpToPx(40)
-                )
-                
-                // Month name
+                val tv1 = android.util.TypedValue(); requireContext().theme.resolveAttribute(android.R.attr.selectableItemBackground, tv1, true)
+                leftArrow.setBackgroundResource(tv1.resourceId)
+                leftArrow.isClickable = true; leftArrow.isFocusable = true
+                leftArrow.layoutParams = android.widget.LinearLayout.LayoutParams(dpToPx(40), dpToPx(40))
+
                 val monthText = android.widget.TextView(context)
-                monthText.text = monthName
-                monthText.textSize = 16f
-                monthText.setTextColor(
-                        resolveThemeColor(
-                                context,
-                                com.google.android.material.R.attr.colorOnSurface
-                        )
-                )
+                monthText.text = monthName; monthText.textSize = 16f
+                monthText.setTextColor(resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurface))
                 monthText.typeface = android.graphics.Typeface.DEFAULT_BOLD
                 monthText.gravity = android.view.Gravity.CENTER
-                monthText.layoutParams = android.widget.LinearLayout.LayoutParams(
-                        0,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                )
+                monthText.layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-                // Right arrow
                 val rightArrow = android.widget.ImageView(context)
                 rightArrow.setImageResource(R.drawable.ic_arrow_right)
                 rightArrow.contentDescription = getString(R.string.next_month)
                 rightArrow.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
-                
-                // Create ripple effect background
-                val typedValueRight = android.util.TypedValue()
-                requireContext().theme.resolveAttribute(android.R.attr.selectableItemBackground, typedValueRight, true)
-                rightArrow.setBackgroundResource(typedValueRight.resourceId)
-                
-                rightArrow.isClickable = true
-                rightArrow.isFocusable = true
-                rightArrow.layoutParams = android.widget.LinearLayout.LayoutParams(
-                        dpToPx(40),
-                        dpToPx(40)
-                )
+                val tv2 = android.util.TypedValue(); requireContext().theme.resolveAttribute(android.R.attr.selectableItemBackground, tv2, true)
+                rightArrow.setBackgroundResource(tv2.resourceId)
+                rightArrow.isClickable = true; rightArrow.isFocusable = true
+                rightArrow.layoutParams = android.widget.LinearLayout.LayoutParams(dpToPx(40), dpToPx(40))
 
-                // Set click listeners for navigation
-                leftArrow.setOnClickListener {
-                    currentDisplayMonth = currentDisplayMonth.minusMonths(1)
-                    refreshMonthlyView(binding, streak)
-                }
-                
-                rightArrow.setOnClickListener {
-                    currentDisplayMonth = currentDisplayMonth.plusMonths(1)
-                    refreshMonthlyView(binding, streak)
-                }
+                leftArrow.setOnClickListener  { currentDisplayMonth = currentDisplayMonth.minusMonths(1); refreshMonthlyView(binding, streak) }
+                rightArrow.setOnClickListener { currentDisplayMonth = currentDisplayMonth.plusMonths(1);  refreshMonthlyView(binding, streak) }
 
-                headerLayout.addView(leftArrow)
-                headerLayout.addView(monthText)
-                headerLayout.addView(rightArrow)
-                
-                // Hide right arrow if we're at or past the current month
+                headerLayout.addView(leftArrow); headerLayout.addView(monthText); headerLayout.addView(rightArrow)
                 val currentMonth = java.time.LocalDate.now().withDayOfMonth(1)
-                rightArrow.visibility = if (displayDate.withDayOfMonth(1) >= currentMonth) {
-                    android.view.View.INVISIBLE
-                } else {
-                    android.view.View.VISIBLE
-                }
-                
+                rightArrow.visibility = if (displayDate.withDayOfMonth(1) >= currentMonth) android.view.View.INVISIBLE else android.view.View.VISIBLE
                 container.addView(headerLayout)
 
-                // Add some space after header
                 val spacer = android.view.View(context)
-                spacer.layoutParams = android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                        dpToPx(16)
-                )
+                spacer.layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(16))
                 container.addView(spacer)
 
-                // Days of week header (Sunday first)
-                val daysOfWeek = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                // Day-of-week header
+                val daysOfWeek = if (weekStartsMonday) arrayOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+                                 else arrayOf("Sun","Mon","Tue","Wed","Thu","Fri","Sat")
                 val weekHeaderRow = android.widget.LinearLayout(context)
                 weekHeaderRow.orientation = android.widget.LinearLayout.HORIZONTAL
-                weekHeaderRow.layoutParams =
-                        android.widget.LinearLayout.LayoutParams(
-                                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                        )
-
+                weekHeaderRow.layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT)
                 for (day in daysOfWeek) {
                         val tv = android.widget.TextView(context)
-                        tv.text = day
-                        tv.gravity = android.view.Gravity.CENTER
-                        tv.textSize = 12f
-                        tv.setTextColor(
-                                resolveThemeColor(
-                                        context,
-                                        com.google.android.material.R.attr.colorOnSurfaceVariant
-                                )
-                        )
-                        tv.layoutParams =
-                                android.widget.LinearLayout.LayoutParams(
-                                        0,
-                                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                                        1f
-                                )
+                        tv.text = day; tv.gravity = android.view.Gravity.CENTER; tv.textSize = 12f
+                        tv.setTextColor(resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant))
+                        tv.layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                         tv.setPadding(0, 0, 0, 12)
                         weekHeaderRow.addView(tv)
                 }
@@ -705,34 +629,24 @@ class StreakDetailsFragment : Fragment() {
                 // Calendar grid
                 val calendarGrid = android.widget.LinearLayout(context)
                 calendarGrid.orientation = android.widget.LinearLayout.VERTICAL
-                calendarGrid.layoutParams =
-                        android.widget.LinearLayout.LayoutParams(
-                                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                        )
+                calendarGrid.layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT)
 
                 var dayNum = 1
                 val totalCells = firstDayOfWeek + daysInMonth
-                val totalWeeks = (totalCells + 6) / 7 // Calculate needed weeks
+                val totalWeeks = (totalCells + 6) / 7
 
                 for (week in 0 until totalWeeks) {
                         val weekRow = android.widget.LinearLayout(context)
                         weekRow.orientation = android.widget.LinearLayout.HORIZONTAL
-                        weekRow.layoutParams =
-                                android.widget.LinearLayout.LayoutParams(
-                                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                                )
+                        weekRow.layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT)
 
                         for (dayOfWeek in 0..6) {
                                 val cell = android.widget.FrameLayout(context)
-                                cell.layoutParams =
-                                        android.widget.LinearLayout.LayoutParams(0, dpToPx(44), 1f)
+                                cell.layoutParams = android.widget.LinearLayout.LayoutParams(0, dpToPx(44), 1f)
                                 cell.setPadding(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2))
 
                                 val dayPosition = week * 7 + dayOfWeek
-                                val shouldShowDay =
-                                        dayPosition >= firstDayOfWeek && dayNum <= daysInMonth
+                                val shouldShowDay = dayPosition >= firstDayOfWeek && dayNum <= daysInMonth
 
                                 if (shouldShowDay) {
                                         val date = displayDate.withDayOfMonth(dayNum)
@@ -743,87 +657,34 @@ class StreakDetailsFragment : Fragment() {
                                         dayTv.text = dayNum.toString()
                                         dayTv.gravity = android.view.Gravity.CENTER
                                         dayTv.textSize = 14f
-                                        dayTv.setTextColor(
-                                                when {
-                                                        isCompleted ->
-                                                                resolveThemeColor(
-                                                                        context,
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorOnSurface
-                                                                )
-                                                        isToday ->
-                                                                resolveThemeColor(
-                                                                        context,
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorPrimary
-                                                                )
-                                                        else ->
-                                                                resolveThemeColor(
-                                                                        context,
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorOnSurfaceVariant
-                                                                )
-                                                }
-                                        )
-                                        dayTv.typeface =
-                                                if (isToday) android.graphics.Typeface.DEFAULT_BOLD
-                                                else android.graphics.Typeface.DEFAULT
-
-                                        val layoutParams =
-                                                android.widget.FrameLayout.LayoutParams(
-                                                        dpToPx(32),
-                                                        dpToPx(32)
-                                                )
-                                        layoutParams.gravity = android.view.Gravity.CENTER
-                                        dayTv.layoutParams = layoutParams
+                                        dayTv.setTextColor(when {
+                                                isCompleted -> resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurface)
+                                                isToday     -> resolveThemeColor(context, com.google.android.material.R.attr.colorPrimary)
+                                                else        -> resolveThemeColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant)
+                                        })
+                                        dayTv.typeface = if (isToday) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+                                        val lp = android.widget.FrameLayout.LayoutParams(dpToPx(32), dpToPx(32))
+                                        lp.gravity = android.view.Gravity.CENTER
+                                        dayTv.layoutParams = lp
 
                                         when {
                                                 isCompleted -> {
-                                                        val drawable = GradientDrawable()
-                                                        drawable.shape = GradientDrawable.OVAL
-                                                        drawable.setColor(streakColor)
-                                                        dayTv.background = drawable
+                                                        val d = android.graphics.drawable.GradientDrawable()
+                                                        d.shape = android.graphics.drawable.GradientDrawable.OVAL
+                                                        d.setColor(streakColor)
+                                                        dayTv.background = d
                                                 }
                                                 isToday -> {
-                                                        val drawable = GradientDrawable()
-                                                        drawable.shape = GradientDrawable.OVAL
-                                                        drawable.setColor(
-                                                                resolveThemeColor(
-                                                                        context,
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorSurface
-                                                                )
-                                                        ) // Light orange background
-                                                        drawable.setStroke(dpToPx(2), streakColor)
-                                                        dayTv.background = drawable
+                                                        val d = android.graphics.drawable.GradientDrawable()
+                                                        d.shape = android.graphics.drawable.GradientDrawable.OVAL
+                                                        d.setColor(resolveThemeColor(context, com.google.android.material.R.attr.colorSurface))
+                                                        d.setStroke(dpToPx(2), streakColor)
+                                                        dayTv.background = d
                                                 }
                                         }
 
-                                        // Add click listener for date toggling
-                                        dayTv.setOnClickListener {
-                                                showDateToggleConfirmation(date, isCompleted, streak, binding)
-                                        }
-                                        
-                                        // Make the day clickable
-                                        dayTv.isClickable = true
-                                        dayTv.isFocusable = true
-
+                                        dayTv.setOnClickListener { showDateToggleConfirmation(date, isCompleted, streak, binding) }
+                                        dayTv.isClickable = true; dayTv.isFocusable = true
                                         cell.addView(dayTv)
                                         dayNum++
                                 }
@@ -831,7 +692,6 @@ class StreakDetailsFragment : Fragment() {
                         }
                         calendarGrid.addView(weekRow)
                 }
-
                 container.addView(calendarGrid)
                 return container
         }

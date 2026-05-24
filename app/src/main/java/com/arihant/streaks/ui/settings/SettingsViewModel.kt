@@ -33,6 +33,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled
 
+    private val _weekStartsMonday = MutableStateFlow(
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_WEEK_MONDAY, false)
+    )
+    val weekStartsMonday: StateFlow<Boolean> = _weekStartsMonday
+
     // Expose streaks for export/import
     val streaksLiveData: LiveData<List<Streak>> = repository.streaks
 
@@ -57,6 +63,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             context.dataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
         }
+    }
+
+    fun setWeekStartsMonday(enabled: Boolean) {
+        _weekStartsMonday.value = enabled
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_WEEK_MONDAY, enabled).apply()
     }
 
     fun addStreak(
@@ -98,5 +110,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     color = streak.color
             )
         }
+    }
+
+    companion object {
+        const val PREFS_NAME = "streaks_settings"
+        const val KEY_WEEK_MONDAY = "week_starts_monday"
     }
 }

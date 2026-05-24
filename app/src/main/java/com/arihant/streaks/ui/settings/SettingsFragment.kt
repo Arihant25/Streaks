@@ -102,6 +102,7 @@ class SettingsFragment : Fragment() {
         setupNotificationChannelButton()
         setupTestNotificationButton()
         setupThemeSpinner()
+        setupWeekStartSwitch()
         setupExportImportButtons()
         
     
@@ -204,6 +205,12 @@ class SettingsFragment : Fragment() {
                     AppCompatDelegate.setDefaultNightMode(
                             AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                     )
+        }
+    }
+
+    private fun setupWeekStartSwitch() {
+        binding.switchWeekStartsMonday.setOnCheckedChangeListener { _, isChecked ->
+            settingsViewModel.setWeekStartsMonday(isChecked)
         }
     }
 
@@ -318,6 +325,13 @@ class SettingsFragment : Fragment() {
             settingsViewModel.notificationsEnabled.collectLatest { enabled ->
                 if (binding.switchEnableNotifications.isChecked != enabled) {
                     binding.switchEnableNotifications.isChecked = enabled
+                }
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            settingsViewModel.weekStartsMonday.collectLatest { monday ->
+                if (binding.switchWeekStartsMonday.isChecked != monday) {
+                    binding.switchWeekStartsMonday.isChecked = monday
                 }
             }
         }
