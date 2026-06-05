@@ -24,7 +24,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val repository = StreakRepository.getInstance()
     private val context = getApplication<Application>().applicationContext
 
-    private val THEME_KEY = stringPreferencesKey("theme")
+    private val THEME_KEY         = stringPreferencesKey("theme")
     private val NOTIFICATIONS_KEY = booleanPreferencesKey("notifications_enabled")
 
     private val _theme = MutableStateFlow("system")
@@ -39,7 +39,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val weekStartsMonday: StateFlow<Boolean> = _weekStartsMonday
 
-    // Expose streaks for export/import
     val streaksLiveData: LiveData<List<Streak>> = repository.streaks
 
     init {
@@ -71,49 +70,33 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             .edit().putBoolean(KEY_WEEK_MONDAY, enabled).apply()
     }
 
-    fun addStreak(
-            name: String,
-            emoji: String,
-            frequency: FrequencyType,
-            frequencyCount: Int,
-            color: String = "#FF9900"
-    ) {
+    fun addStreak(name: String, emoji: String, frequency: FrequencyType,
+                  frequencyCount: Int, color: String = "#FF9900") {
         repository.addStreak(name, emoji, frequency, frequencyCount, context, color)
     }
 
-    fun getStreaksForExport(): List<Streak> {
-        return streaksLiveData.value ?: emptyList()
-    }
+    fun getStreaksForExport(): List<Streak> = streaksLiveData.value ?: emptyList()
 
     fun setStreaksFromImport(streaks: List<Streak>) {
         repository.setStreaksFromImport(streaks, context)
     }
 
-    fun loadStreaksFromFile() {
-        repository.loadStreaksFromFile(context)
-    }
+    fun loadStreaksFromFile() { repository.loadStreaksFromFile(context) }
 
-    fun getStreaksForExportDto(): List<StreakExportDto> {
-        return (streaksLiveData.value ?: emptyList()).map { streak ->
+    fun getStreaksForExportDto(): List<StreakExportDto> =
+        (streaksLiveData.value ?: emptyList()).map { streak ->
             StreakExportDto(
-                    id = streak.id,
-                    name = streak.name,
-                    emoji = streak.emoji,
-                    frequency = streak.frequency,
-                    frequencyCount = streak.frequencyCount,
-                    createdDate = streak.createdDate,
-                    lastCompletedDate = streak.lastCompletedDate,
-                    currentStreak = streak.currentStreak,
-                    bestStreak = streak.bestStreak,
-                    completions = streak.completions,
-                    reminder = streak.reminder,
-                    color = streak.color
+                id = streak.id, name = streak.name, emoji = streak.emoji,
+                frequency = streak.frequency, frequencyCount = streak.frequencyCount,
+                createdDate = streak.createdDate, lastCompletedDate = streak.lastCompletedDate,
+                currentStreak = streak.currentStreak, bestStreak = streak.bestStreak,
+                completions = streak.completions, reminder = streak.reminder,
+                color = streak.color, frequencyHistory = streak.frequencyHistory
             )
         }
-    }
 
     companion object {
-        const val PREFS_NAME = "streaks_settings"
+        const val PREFS_NAME    = "streaks_settings"
         const val KEY_WEEK_MONDAY = "week_starts_monday"
     }
 }

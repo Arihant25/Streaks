@@ -102,8 +102,8 @@ class SettingsFragment : Fragment() {
         setupNotificationChannelButton()
         setupTestNotificationButton()
         setupThemeSpinner()
-        setupWeekStartSwitch()
         setupExportImportButtons()
+        setupWeekStartSwitch()
         
     
         observeSettings()

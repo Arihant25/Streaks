@@ -45,6 +45,15 @@ class HomeViewModel : ViewModel() {
         repository.updateStreakNameEmojiColor(streakId, name, emoji, color, context)
     }
 
+    fun updateStreakFrequency(
+            streakId: String,
+            frequency: com.arihant.streaks.data.FrequencyType,
+            frequencyCount: Int,
+            context: android.content.Context
+    ) {
+        repository.updateStreakFrequency(streakId, frequency, frequencyCount, context)
+    }
+
     fun reorderStreaks(newOrder: List<String>, context: android.content.Context) {
         repository.reorderStreaks(newOrder, context)
     }
