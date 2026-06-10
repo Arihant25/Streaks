@@ -1,102 +1,60 @@
 package com.arihant.streaks.ui.settings
 
 import android.app.Application
-import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
-import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.data.SettingsStore
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.data.StreakExportDto
 import com.arihant.streaks.data.StreakRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-private val Context.dataStore by preferencesDataStore(name = "settings")
-
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = StreakRepository.getInstance()
-    private val context = getApplication<Application>().applicationContext
 
-    private val THEME_KEY         = stringPreferencesKey("theme")
-    private val NOTIFICATIONS_KEY = booleanPreferencesKey("notifications_enabled")
+    private val repository = StreakRepository.getInstance(application)
+    private val context = application.applicationContext
 
-    private val _theme = MutableStateFlow("system")
+    private val _theme = MutableStateFlow(SettingsStore.THEME_SYSTEM)
     val theme: StateFlow<String> = _theme
 
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled
 
-    private val _weekStartsMonday = MutableStateFlow(
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getBoolean(KEY_WEEK_MONDAY, false)
-    )
+    private val _weekStartsMonday = MutableStateFlow(SettingsStore.weekStartsMonday(context))
     val weekStartsMonday: StateFlow<Boolean> = _weekStartsMonday
-
-    val streaksLiveData: LiveData<List<Streak>> = repository.streaks
 
     init {
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[THEME_KEY] ?: "system" }.collect {
-                _theme.value = it
-            }
+            SettingsStore.themeFlow(context).collect { _theme.value = it }
         }
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[NOTIFICATIONS_KEY] ?: false }.collect {
+            SettingsStore.notificationsEnabledFlow(context).collect {
                 _notificationsEnabled.value = it
             }
         }
     }
 
     fun setTheme(theme: String) {
-        viewModelScope.launch { context.dataStore.edit { prefs -> prefs[THEME_KEY] = theme } }
+        viewModelScope.launch { SettingsStore.setTheme(context, theme) }
     }
 
-    fun setNotificationEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            context.dataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
-        }
+    fun setNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch { SettingsStore.setNotificationsEnabled(context, enabled) }
     }
 
     fun setWeekStartsMonday(enabled: Boolean) {
+        if (_weekStartsMonday.value == enabled) return
         _weekStartsMonday.value = enabled
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putBoolean(KEY_WEEK_MONDAY, enabled).apply()
+        SettingsStore.setWeekStartsMonday(context, enabled)
+        // Weekly periods are defined by the week start, so the numbers must be recomputed
+        repository.recalculateAll()
     }
 
-    fun addStreak(name: String, emoji: String, frequency: FrequencyType,
-                  frequencyCount: Int, color: String = "#FF9900") {
-        repository.addStreak(name, emoji, frequency, frequencyCount, context, color)
-    }
+    fun getStreaksForExport(): List<StreakExportDto> = repository.getStreaks().map { it.toDto() }
 
-    fun getStreaksForExport(): List<Streak> = streaksLiveData.value ?: emptyList()
+    fun getStreaks(): List<Streak> = repository.getStreaks()
 
-    fun setStreaksFromImport(streaks: List<Streak>) {
-        repository.setStreaksFromImport(streaks, context)
-    }
-
-    fun loadStreaksFromFile() { repository.loadStreaksFromFile(context) }
-
-    fun getStreaksForExportDto(): List<StreakExportDto> =
-        (streaksLiveData.value ?: emptyList()).map { streak ->
-            StreakExportDto(
-                id = streak.id, name = streak.name, emoji = streak.emoji,
-                frequency = streak.frequency, frequencyCount = streak.frequencyCount,
-                createdDate = streak.createdDate, lastCompletedDate = streak.lastCompletedDate,
-                currentStreak = streak.currentStreak, bestStreak = streak.bestStreak,
-                completions = streak.completions, reminder = streak.reminder,
-                color = streak.color, frequencyHistory = streak.frequencyHistory
-            )
-        }
-
-    companion object {
-        const val PREFS_NAME    = "streaks_settings"
-        const val KEY_WEEK_MONDAY = "week_starts_monday"
-    }
+    fun importStreaks(streaks: List<Streak>) = repository.replaceAll(streaks)
 }

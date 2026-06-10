@@ -1,68 +1,49 @@
 package com.arihant.streaks.ui.home
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
+import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.data.Reminder
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.data.StreakRepository
+import java.time.LocalDate
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = StreakRepository.getInstance()
+    private val repository = StreakRepository.getInstance(application)
 
     val streaks: LiveData<List<Streak>> = repository.streaks
 
-    fun completeStreak(streakId: String, context: android.content.Context) {
-        repository.completeStreak(streakId, context)
-    }
+    fun addStreak(
+        name: String,
+        emoji: String,
+        frequency: FrequencyType,
+        frequencyCount: Int,
+        color: String
+    ) = repository.addStreak(name, emoji, frequency, frequencyCount, color)
 
-    fun uncompleteStreak(streakId: String, context: android.content.Context) {
-        repository.uncompleteStreak(streakId, context)
-    }
+    fun completeStreak(streakId: String) = repository.completeStreak(streakId)
 
-    fun deleteStreak(streakId: String, context: android.content.Context) {
-        repository.deleteStreak(streakId, context)
-    }
+    fun uncompleteStreak(streakId: String) = repository.uncompleteStreak(streakId)
 
-    fun setStreakReminder(
-            streakId: String,
-            reminder: com.arihant.streaks.data.Reminder,
-            context: android.content.Context
-    ): com.arihant.streaks.data.Streak? {
-        return repository.setStreakReminder(streakId, reminder, context)
-    }
+    fun deleteStreak(streakId: String): Streak? = repository.deleteStreak(streakId)
 
-    fun removeStreakReminder(streakId: String, context: android.content.Context) {
-        repository.removeStreakReminder(streakId, context)
-    }
+    fun restoreStreak(streak: Streak) = repository.restoreStreak(streak)
 
-    fun updateStreakNameEmojiColor(
-            streakId: String,
-            name: String,
-            emoji: String,
-            color: String,
-            context: android.content.Context
-    ) {
-        repository.updateStreakNameEmojiColor(streakId, name, emoji, color, context)
-    }
+    fun setStreakReminder(streakId: String, reminder: Reminder): Streak? =
+        repository.setStreakReminder(streakId, reminder)
 
-    fun updateStreakFrequency(
-            streakId: String,
-            frequency: com.arihant.streaks.data.FrequencyType,
-            frequencyCount: Int,
-            context: android.content.Context
-    ) {
-        repository.updateStreakFrequency(streakId, frequency, frequencyCount, context)
-    }
+    fun removeStreakReminder(streakId: String) = repository.removeStreakReminder(streakId)
 
-    fun reorderStreaks(newOrder: List<String>, context: android.content.Context) {
-        repository.reorderStreaks(newOrder, context)
-    }
+    fun updateStreakNameEmojiColor(streakId: String, name: String, emoji: String, color: String) =
+        repository.updateStreakNameEmojiColor(streakId, name, emoji, color)
 
-    fun toggleStreakCompletion(
-            streakId: String,
-            date: java.time.LocalDate,
-            context: android.content.Context
-    ) {
-        repository.toggleStreakCompletionForDate(streakId, date, context)
-    }
+    fun updateStreakFrequency(streakId: String, frequency: FrequencyType, frequencyCount: Int) =
+        repository.updateStreakFrequency(streakId, frequency, frequencyCount)
+
+    fun reorderStreaks(newOrder: List<String>) = repository.reorderStreaks(newOrder)
+
+    fun toggleStreakCompletion(streakId: String, date: LocalDate) =
+        repository.toggleStreakCompletionForDate(streakId, date)
 }

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "PowerShell(.\\\\gradlew.bat :app:compileDebugKotlin --console=plain -q)",
+      "PowerShell($candidates = @\\(\"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\", \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jre\", \"$env:LOCALAPPDATA\\\\Programs\\\\Android Studio\\\\jbr\"\\) + \\(Get-ChildItem \"C:\\\\Program Files\\\\Java\" -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }\\) + \\(Get-ChildItem \"C:\\\\Program Files\\\\Eclipse Adoptium\" -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }\\); foreach \\($c in $candidates\\) { if \\(Test-Path \"$c\\\\bin\\\\java.exe\"\\) { Write-Output $c } })",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-25.0.1.8-hotspot\"; $env:Path = \"$env:JAVA_HOME\\\\bin;$env:Path\"; .\\\\gradlew.bat :app:compileDebugKotlin --console=plain -q)",
+      "PowerShell($env:JAVA_HOME = \"D:\\\\AndroidStudio\\\\jbr\"; $env:Path = \"$env:JAVA_HOME\\\\bin;\" + $env:Path; .\\\\gradlew.bat :app:testDebugUnitTest :app:assembleDebug --console=plain -q; if \\($?\\) { Write-Output \"BUILD + TESTS OK\"; \\(Get-Item \"app\\\\build\\\\outputs\\\\apk\\\\debug\\\\app-debug.apk\"\\).LastWriteTime })"
+    ]
+  }
+}

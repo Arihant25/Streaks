@@ -32,13 +32,32 @@ data class Streak(
         val isCompletedToday: Boolean = false,
         val completions: List<String> = emptyList(),
         val reminder: Reminder? = null,
-        val color: String = "#FF9900",
+        val color: String = DEFAULT_COLOR,
         val position: Int = Int.MAX_VALUE,
         val frequencyHistory: List<FrequencyChange> = emptyList()
 ) : Parcelable {
-        fun getCreatedDate(): LocalDate = LocalDate.parse(createdDate)
-        fun getLastCompletedDate(): LocalDate? = lastCompletedDate?.let { LocalDate.parse(it) }
         fun asLocalDateCompletions(): List<LocalDate> = completions.map { LocalDate.parse(it) }
+
+        fun toDto(): StreakExportDto = StreakExportDto(
+                id = id,
+                name = name,
+                emoji = emoji,
+                frequency = frequency,
+                frequencyCount = frequencyCount,
+                createdDate = createdDate,
+                lastCompletedDate = lastCompletedDate,
+                currentStreak = currentStreak,
+                bestStreak = bestStreak,
+                completions = completions,
+                reminder = reminder,
+                color = color,
+                position = position,
+                frequencyHistory = frequencyHistory
+        )
+
+        companion object {
+                const val DEFAULT_COLOR = "#FF9900"
+        }
 }
 
 @Parcelize
@@ -61,8 +80,27 @@ data class StreakExportDto(
         val bestStreak: Int = 0,
         val completions: List<String> = emptyList(),
         val reminder: Reminder? = null,
-        val color: String = "#FF9900",
+        val color: String = Streak.DEFAULT_COLOR,
         val position: Int = Int.MAX_VALUE,
         val frequencyHistory: List<FrequencyChange>? = null   // nullable for backwards compat
-)
-
+) {
+        /** Gson can leave non-null fields null when the JSON omits them, hence the fallbacks. */
+        @Suppress("USELESS_ELVIS", "SENSELESS_COMPARISON")
+        fun toStreak(): Streak = Streak(
+                id = id,
+                name = name,
+                emoji = emoji ?: "🔥",
+                frequency = frequency,
+                frequencyCount = frequencyCount,
+                createdDate = createdDate,
+                lastCompletedDate = lastCompletedDate,
+                currentStreak = currentStreak,
+                bestStreak = bestStreak,
+                isCompletedToday = false, // derived by recalculation
+                completions = completions ?: emptyList(),
+                reminder = reminder,
+                color = color ?: Streak.DEFAULT_COLOR,
+                position = position,
+                frequencyHistory = frequencyHistory ?: emptyList()
+        )
+}

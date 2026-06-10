@@ -6,13 +6,15 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.arihant.streaks.databinding.FragmentHomeBinding
 import com.arihant.streaks.ui.adapters.StreaksAdapter
+import com.arihant.streaks.ui.dialogs.AddStreakDialog
 import com.google.android.material.transition.platform.MaterialSharedAxis
 
 class HomeFragment : Fragment() {
@@ -21,12 +23,11 @@ class HomeFragment : Fragment() {
     private val binding
         get() = _binding!!
 
-    private lateinit var homeViewModel: HomeViewModel
+    private val homeViewModel: HomeViewModel by activityViewModels()
     private lateinit var streaksAdapter: StreaksAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Predictive back: Material motion for enter/return
         enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
         returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
     }
@@ -36,86 +37,85 @@ class HomeFragment : Fragment() {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View {
-        homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
 
         setupRecyclerView()
         observeStreaks()
 
+        binding.fabAddStreak.setOnClickListener {
+            AddStreakDialog.newForAdd().show(parentFragmentManager, "AddStreakDialog")
+        }
+
         return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        parentFragmentManager.setFragmentResultListener(
+                AddStreakDialog.RESULT_KEY_ADD,
+                viewLifecycleOwner
+        ) { _, bundle ->
+            val result = AddStreakDialog.parseResult(bundle)
+            homeViewModel.addStreak(
+                    result.name, result.emoji, result.frequency, result.frequencyCount, result.color
+            )
+        }
+    }
+
     private fun setupRecyclerView() {
-        streaksAdapter =
-                StreaksAdapter(
-                        onStreakToggled = { streakId, shouldCheck ->
-                            if (shouldCheck) {
-                                homeViewModel.completeStreak(streakId, requireContext())
-                            } else {
-                                homeViewModel.uncompleteStreak(streakId, requireContext())
-                            }
-                        },
-                        onStreakClicked = { streak, view ->
-                            val action =
-                                    com.arihant.streaks.ui.home.HomeFragmentDirections
-                                            .actionHomeToStreakDetails(streak)
-                            val extras =
-                                    androidx.navigation.fragment.FragmentNavigatorExtras(
-                                            view to "streak_card_${streak.id}"
-                                    )
-                            findNavController().navigate(action, extras)
-                        }
-                )
+        streaksAdapter = StreaksAdapter(
+                onStreakToggled = { streakId, shouldCheck ->
+                    if (shouldCheck) homeViewModel.completeStreak(streakId)
+                    else homeViewModel.uncompleteStreak(streakId)
+                },
+                onStreakClicked = { streak, view ->
+                    val action = HomeFragmentDirections.actionHomeToStreakDetails(streak.id)
+                    val extras = FragmentNavigatorExtras(view to "streak_card_${streak.id}")
+                    findNavController().navigate(action, extras)
+                }
+        )
 
         binding.recyclerStreaks.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = streaksAdapter
         }
 
-        val itemTouchHelper =
-                ItemTouchHelper(
-                        object :
-                                ItemTouchHelper.SimpleCallback(
-                                        ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-                                        0
-                                ) {
-                            override fun onMove(
-                                    recyclerView: RecyclerView,
-                                    viewHolder: RecyclerView.ViewHolder,
-                                    target: RecyclerView.ViewHolder
-                            ): Boolean {
-                                val fromPos = viewHolder.adapterPosition
-                                val toPos = target.adapterPosition
-                                streaksAdapter.moveItem(fromPos, toPos)
-                                return true
-                            }
-
-                            override fun onSwiped(
-                                    viewHolder: RecyclerView.ViewHolder,
-                                    direction: Int
-                            ) {
-                                // No swipe actions
-                            }
-
-                            override fun clearView(
-                                    recyclerView: RecyclerView,
-                                    viewHolder: RecyclerView.ViewHolder
-                            ) {
-                                super.clearView(recyclerView, viewHolder)
-                                // Persist the new order after drag is finished
-                                val newOrder = streaksAdapter.currentList.map { it.id }
-                                homeViewModel.reorderStreaks(newOrder, requireContext())
-                            }
+        val itemTouchHelper = ItemTouchHelper(
+                object : ItemTouchHelper.SimpleCallback(
+                        ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+                ) {
+                    override fun onMove(
+                            recyclerView: RecyclerView,
+                            viewHolder: RecyclerView.ViewHolder,
+                            target: RecyclerView.ViewHolder
+                    ): Boolean {
+                        val from = viewHolder.bindingAdapterPosition
+                        val to = target.bindingAdapterPosition
+                        if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) {
+                            return false
                         }
-                )
+                        streaksAdapter.moveItem(from, to)
+                        return true
+                    }
+
+                    override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+                    override fun clearView(
+                            recyclerView: RecyclerView,
+                            viewHolder: RecyclerView.ViewHolder
+                    ) {
+                        super.clearView(recyclerView, viewHolder)
+                        // Persist the new order once the drag is finished
+                        homeViewModel.reorderStreaks(streaksAdapter.currentIds)
+                    }
+                }
+        )
         itemTouchHelper.attachToRecyclerView(binding.recyclerStreaks)
     }
 
     private fun observeStreaks() {
         homeViewModel.streaks.observe(viewLifecycleOwner) { streaks ->
             streaksAdapter.submitList(streaks)
-
-            // Show/hide empty state
             binding.emptyState.isVisible = streaks.isEmpty()
             binding.recyclerStreaks.isVisible = streaks.isNotEmpty()
         }

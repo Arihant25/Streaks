@@ -8,6 +8,7 @@
 
     <!-- Dialog Title -->
     <TextView
+        android:id="@+id/dialog_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/create_streak"
@@ -77,9 +78,7 @@
         android:id="@+id/input_layout_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:boxStrokeColor="@color/orange"
-        app:hintTextColor="@color/orange">
+        android:layout_marginBottom="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edit_streak_name"
@@ -114,8 +113,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        app:boxStrokeColor="@color/orange"
-        app:hintTextColor="@color/orange"
         android:visibility="gone"
         android:hint="@string/how_many_times">
 
@@ -150,7 +147,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/create_streak"
-            android:backgroundTint="@color/orange"
             app:cornerRadius="8dp" />
 
     </LinearLayout>

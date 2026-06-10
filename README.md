@@ -24,7 +24,14 @@ Streaks is an Android application designed to help users build and maintain posi
 - Set customizable reminders for each habit
 - Choose specific days of the week for reminders
 - Set custom reminder times
-- Push notifications to keep you on track
+- Exact-alarm notifications with a "Mark as done" action
+- Reminders are skipped automatically when the habit is already done for the period
+
+### Widget
+
+- Resizable home-screen widget (one or two rows, up to 8 habits)
+- Tap a habit on the widget to mark it done for today
+- Tap the app icon / header (or any empty space) to open the app
 
 ### User Interface
 
@@ -35,7 +42,7 @@ Streaks is an Android application designed to help users build and maintain posi
 
 ## Privacy & Data Security
 
-- **100% Local Storage**: All your habit data is stored exclusively on your device using Room database
+- **100% Local Storage**: All your habit data is stored exclusively on your device (atomic JSON file in app-private storage)
 - **No Internet Required**: The app works completely offline - no network permissions needed
 - **No Data Collection**: We don't collect, store, or transmit any personal information
 - **No Ads or Tracking**: Clean experience without advertisements or user tracking
@@ -45,17 +52,16 @@ Streaks is an Android application designed to help users build and maintain posi
 
 ### Requirements
 
-- Android 8.0 (API level 26) or higher
-- Android Studio Arctic Fox or newer
-- Kotlin 1.5.0 or higher
+- Android 12 (API level 31) or higher
+- Android Studio Hedgehog or newer
 
 ### Dependencies
 
 - AndroidX Core Libraries
-- Material Design Components
+- Material Design Components (Material 3, dynamic color)
 - Navigation Component
 - ViewModel and LiveData
-- Room Database (for local data storage)
+- Gson + DataStore (local persistence)
 
 ### Architecture
 

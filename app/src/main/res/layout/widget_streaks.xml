@@ -7,16 +7,99 @@
     android:padding="8dp"
     android:background="@color/widget_background"
     android:gravity="center_horizontal">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_horizontal">
-        <FrameLayout android:id="@+id/streak_column_0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_0" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
-        <FrameLayout android:id="@+id/streak_column_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_1" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
-        <FrameLayout android:id="@+id/streak_column_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_2" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
-        <FrameLayout android:id="@+id/streak_column_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_3" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
+
+    <!-- Header: dedicated tap target that opens the app (streak blocks toggle completion) -->
+    <LinearLayout
+        android:id="@+id/widget_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="6dp">
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@mipmap/ic_launcher_round"
+            android:contentDescription="@string/open_app" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="@string/app_name"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/black" />
     </LinearLayout>
-    <LinearLayout android:id="@+id/widget_row_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:orientation="horizontal" android:gravity="center_horizontal">
-        <FrameLayout android:id="@+id/streak_column_4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_4" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
-        <FrameLayout android:id="@+id/streak_column_5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_5" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
-        <FrameLayout android:id="@+id/streak_column_6" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_6" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
-        <FrameLayout android:id="@+id/streak_column_7" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center_horizontal"><TextView android:id="@+id/streak_icon_7" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/><TextView android:id="@+id/streak_count_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:gravity="center"/><TextView android:id="@+id/streak_unit_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:gravity="center"/></LinearLayout></FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+        <FrameLayout android:id="@+id/streak_column_0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_0" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout android:id="@+id/streak_column_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_1" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout android:id="@+id/streak_column_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_2" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout android:id="@+id/streak_column_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_3" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_row_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+        <FrameLayout android:id="@+id/streak_column_4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_4" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout android:id="@+id/streak_column_5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_5" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout android:id="@+id/streak_column_6" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_6" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout android:id="@+id/streak_column_7" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <LinearLayout android:id="@+id/streak_inner_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:gravity="center_horizontal" android:paddingLeft="4dp" android:paddingRight="4dp">
+                <TextView android:id="@+id/streak_icon_7" android:layout_width="wrap_content" android:layout_height="36dp" android:textSize="26sp" android:gravity="center" android:layout_gravity="center"/>
+                <TextView android:id="@+id/streak_count_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center"/>
+                <TextView android:id="@+id/streak_unit_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/black" android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
 </LinearLayout>

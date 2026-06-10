@@ -22,26 +22,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Add New Streak Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_streak"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginEnd="16dp"
-        android:text="@string/add_new_streak"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:backgroundTint="@color/orange"
-        app:cornerRadius="12dp"
-        app:icon="@drawable/ic_add"
-        app:iconGravity="start"
-        app:iconTint="@color/white"
-        app:layout_constraintTop_toBottomOf="@id/text_settings"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <!-- Settings Section -->
     <TextView
         android:id="@+id/settings_section_title"
@@ -54,7 +34,7 @@
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        app:layout_constraintTop_toBottomOf="@id/btn_add_streak"
+        app:layout_constraintTop_toBottomOf="@id/text_settings"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />    <Switch
         android:id="@+id/switch_enable_notifications"
@@ -164,8 +144,8 @@
             android:id="@+id/btn_export_data"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Export Data"
-            android:textColor="@color/orange"
+            android:text="@string/export_data"
+            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -177,8 +157,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Import Data"
-            android:textColor="@color/orange"
+            android:text="@string/import_data"
+            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -196,7 +176,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:text="Privacy Policy"
-        android:textColor="@color/orange"
+        android:textColor="?attr/colorPrimary"
         android:textSize="16sp"
         android:textStyle="bold"
         android:clickable="true"

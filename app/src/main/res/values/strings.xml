@@ -4,7 +4,7 @@
     <string name="title_settings">Settings</string>
     <string name="title_notifications">Notifications</string>
     <string name="enable_notifications">Enable Notifications</string>
-    <string name="notification_settings_info">For reliable notifications, please allow exact alarms and disable battery optimization when prompted.</string>
+    <string name="notification_settings_info">Reminders use exact alarms when allowed. For on-time delivery, allow "Alarms &amp; reminders" when prompted.</string>
     <string name="notification_channel_settings">Notification Channel Settings</string>
     <string name="test_notification">Test Notification</string>
     <string name="add_new_streak">Add New Streak</string>
@@ -36,7 +36,7 @@
     </plurals>
     <string name="no_streaks_yet">Ready to get started?</string>
     <string name="week_starts_monday">Week starts on Monday</string>
-    <string name="tap_to_add_first_streak">Go to settings to add your first streak!</string>
+    <string name="tap_to_add_first_streak">Tap + to add your first streak!</string>
     <string name="streak_not_started">No ongoing streak</string>
     <string name="theme">Theme</string>
     <string name="theme_system">System Default</string>
@@ -58,4 +58,31 @@
     <string name="confirm_mark_uncompleted">Remove completion for this day?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="save">Save</string>
+    <string name="edit">Edit</string>
+    <string name="undo">Undo</string>
+    <string name="streak_deleted">Streak deleted</string>
+    <string name="streak_updated">Streak updated</string>
+    <string name="set_reminder">Set Reminder</string>
+    <string name="no_reminder_set">No reminder set</string>
+    <string name="mark_as_done">Mark as done</string>
+    <string name="reminder_notification_text">Time to work on your streak!</string>
+    <string name="previous_year">Previous year</string>
+    <string name="next_year">Next year</string>
+    <string name="year_activity">%d Activity</string>
+    <string name="month_title">%1$s %2$d</string>
+    <string name="pick_emoji">Pick an emoji</string>
+    <string name="custom_emoji_hint">Or type your own…</string>
+    <string name="error_enter_name">Please enter a name</string>
+    <string name="error_enter_valid_number">Please enter a valid number</string>
+    <string name="load_data_failed">Couldn\'t read saved data. A backup of the damaged file was kept.</string>
+    <string name="notification_permission_denied">Notification permission denied</string>
+    <string name="notification_permission_required">Notification permission required</string>
+    <string name="test_notification_sent">Test notification sent!</string>
+    <string name="cd_mark_completed">Mark %s as completed today</string>
+    <string name="cd_completed_today">%s completed today. Tap to undo</string>
+    <string name="cd_day_completed">%s, completed. Tap to toggle</string>
+    <string name="cd_day_not_completed">%s, not completed. Tap to toggle</string>
+    <string name="cd_color_option">Streak color option</string>
+    <string name="open_app">Open Streaks</string>
 </resources>
