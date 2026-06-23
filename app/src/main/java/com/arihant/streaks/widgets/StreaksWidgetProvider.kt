@@ -76,24 +76,33 @@ class StreaksWidgetProvider : AppWidgetProvider() {
     }
 
     private fun populateColumns(context: Context, views: RemoteViews, streaks: List<Streak>) {
-        val defaultTextColor = context.getColor(R.color.black)
         for (i in COLUMN_IDS.indices) {
             if (i < streaks.size) {
                 val streak = streaks[i]
                 val done = streak.isCompletedToday
-                val accent = try {
-                    Color.parseColor(streak.color)
-                } catch (e: IllegalArgumentException) {
-                    Color.parseColor(Streak.DEFAULT_COLOR)
-                }
 
                 views.setViewVisibility(COLUMN_IDS[i], View.VISIBLE)
                 views.setTextViewText(ICON_IDS[i], streak.emoji)
                 views.setTextViewText(COUNT_IDS[i], streak.currentStreak.toString())
-                views.setTextColor(COUNT_IDS[i], if (done) accent else defaultTextColor)
                 val unit = unit(streak.frequency, streak.currentStreak)
                 views.setTextViewText(UNIT_IDS[i], if (done) "✓ $unit" else unit)
-                views.setTextColor(UNIT_IDS[i], if (done) accent else defaultTextColor)
+
+                // Color handling is theme-aware. For NOT-done streaks we leave the layout's
+                // adaptive @color/black untouched: when the launcher re-applies the cached
+                // RemoteViews after a light/dark switch (without firing onUpdate), the XML
+                // color re-resolves to the right shade. Baking a color here used to freeze it
+                // to the old theme, so the numbers vanished into the new background until a
+                // tap forced a rebuild. The accent (done) color is theme-independent, so it is
+                // safe to set explicitly.
+                if (done) {
+                    val accent = try {
+                        Color.parseColor(streak.color)
+                    } catch (e: IllegalArgumentException) {
+                        Color.parseColor(Streak.DEFAULT_COLOR)
+                    }
+                    views.setTextColor(COUNT_IDS[i], accent)
+                    views.setTextColor(UNIT_IDS[i], accent)
+                }
                 views.setOnClickPendingIntent(
                     INNER_IDS[i],
                     com.arihant.streaks.notifications.StreakActionReceiver
