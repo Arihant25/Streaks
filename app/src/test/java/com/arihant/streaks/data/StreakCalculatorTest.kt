@@ -246,6 +246,49 @@ class StreakCalculatorTest {
     }
 
     @Test
+    fun `monthly to weekly - completion last week counts as one week, this week makes two`() {
+        // The exact scenario reported by a user: a once-a-month streak switched to once-a-week
+        // today, with the monthly task done last week. The old (pre-era) math returned 0 here
+        // because the monthly period's full end didn't touch the new weekly period's start.
+        val today = LocalDate.parse("2026-06-23") // Tuesday; Sunday-week = [Jun 21, Jun 28)
+        val history = listOf(
+            FrequencyChange("2026-06-01", FrequencyType.MONTHLY, 1),
+            FrequencyChange("2026-06-23", FrequencyType.WEEKLY, 1)
+        )
+        val lastWeekOnly = listOf("2026-06-17") // within last week [Jun 14, Jun 21)
+        val before = StreakCalculator.recalculate(
+            streak(frequency = FrequencyType.WEEKLY, frequencyCount = 1,
+                    completions = lastWeekOnly, frequencyHistory = history),
+            lastWeekOnly, weekStartsMonday = false, today = today
+        )
+        assertEquals(1, before.currentStreak) // last week's monthly period bridges in as 1
+
+        val withThisWeek = lastWeekOnly + "2026-06-23"
+        val after = StreakCalculator.recalculate(
+            streak(frequency = FrequencyType.WEEKLY, frequencyCount = 1,
+                    completions = withThisWeek, frequencyHistory = history),
+            withThisWeek, weekStartsMonday = false, today = today
+        )
+        assertEquals(2, after.currentStreak) // this week completed → 2
+    }
+
+    @Test
+    fun `monthly to weekly - change made a week earlier still counts last week`() {
+        val today = LocalDate.parse("2026-06-23")
+        val history = listOf(
+            FrequencyChange("2026-06-01", FrequencyType.MONTHLY, 1),
+            FrequencyChange("2026-06-09", FrequencyType.WEEKLY, 1) // switched ~2 weeks ago
+        )
+        val completions = listOf("2026-06-17") // last week, now under weekly rules
+        val result = StreakCalculator.recalculate(
+            streak(frequency = FrequencyType.WEEKLY, frequencyCount = 1,
+                    completions = completions, frequencyHistory = history),
+            completions, weekStartsMonday = false, today = today
+        )
+        assertEquals(1, result.currentStreak)
+    }
+
+    @Test
     fun `switch to yearly preserves accumulated weekly history`() {
         // The old math backdated the yearly era to Jan 1, collapsing months of weekly
         // streak into a single period. Now the era starts on the change day.
