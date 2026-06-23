@@ -1,17 +1,44 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Built application files
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+*.dm
+
+# Build output
+build/
+/app/release/
+bin/
+gen/
+out/
+captures/
+
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+
+# Native build
+.externalNativeBuild/
+.cxx/
+
+# Local configuration (SDK path, etc.)
 local.properties
 
-my-release-key.jks
+# IDE — Android Studio / IntelliJ
+*.iml
+.idea/
+
+# Signing keys — never commit these
+*.jks
+*.keystore
+
+# Claude Code local config
+.claude/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
