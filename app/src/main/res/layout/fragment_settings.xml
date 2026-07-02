@@ -96,20 +96,6 @@
 
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/gray_medium" />
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switch_show_flame"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="56dp"
-                    android:text="@string/show_flame_setting"
-                    android:textSize="16sp"
-                    android:textColor="@color/black" />
-
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>

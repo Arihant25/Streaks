@@ -26,16 +26,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val THEME_KEY = stringPreferencesKey("theme")
     private val NOTIFICATIONS_KEY = booleanPreferencesKey("notifications_enabled")
-    private val SHOW_FLAME_KEY = booleanPreferencesKey("show_flame")
 
     private val _theme = MutableStateFlow("system")
     val theme: StateFlow<String> = _theme
 
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled
-
-    private val _showFlame = MutableStateFlow(true)
-    val showFlame: StateFlow<Boolean> = _showFlame
 
     // Expose streaks for export/import
     val streaksLiveData: LiveData<List<Streak>> = repository.streaks
@@ -51,15 +47,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _notificationsEnabled.value = it
             }
         }
-        viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[SHOW_FLAME_KEY] ?: true }.collect {
-                _showFlame.value = it
-            }
-        }
-    }
-
-    fun setShowFlame(show: Boolean) {
-        viewModelScope.launch { context.dataStore.edit { prefs -> prefs[SHOW_FLAME_KEY] = show } }
     }
 
     fun setTheme(theme: String) {

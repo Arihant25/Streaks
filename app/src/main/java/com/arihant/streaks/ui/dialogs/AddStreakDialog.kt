@@ -2,7 +2,6 @@ package com.arihant.streaks.ui.dialogs
 
 import android.app.Dialog
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -10,12 +9,13 @@ import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.GridLayout
+import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.arihant.streaks.R
 import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.databinding.DialogAddStreakBinding
+import java.text.BreakIterator
 
 class AddStreakDialog(
         private val onStreakAdded: (String, String, FrequencyType, Int, String) -> Unit,
@@ -34,17 +34,6 @@ class AddStreakDialog(
     private var selectedEmoji: String = "🔥"
     private val EMOJI_PICKER_REQUEST = 1001
     private var selectedColor: String = initialColor ?: "#FF9900"
-    private val colorOptions =
-            listOf(
-                    "#FF9900", // neon_orange
-                    "#F0F01B", // neon_yellow
-                    "#B1E80D", // neon_green
-                    "#0065F8", // neon_blue
-                    "#FF2DF1", // neon_purple
-                    "#F93827", // neon_red
-                    "#FF55BB", // neon_pink
-                    "#A3D8FF" // neon_cyan
-            )
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = DialogAddStreakBinding.inflate(layoutInflater)
@@ -63,7 +52,7 @@ class AddStreakDialog(
 
         setupEmojiPicker()
         setupFrequencySpinner()
-        setupColorGrid()
+        setupColorWheel()
         setupClickListeners()
 
         if (isEditMode) {
@@ -124,8 +113,22 @@ class AddStreakDialog(
                     .setView(input)
                     .setPositiveButton("OK") { _, _ ->
                         val emoji = input.text.toString().trim()
-                        selectedEmoji = if (emoji.isEmpty()) "🔥" else emoji
-                        binding.selectedEmoji.text = selectedEmoji
+                        when {
+                            emoji.isEmpty() -> {
+                                // Keep the current emoji
+                            }
+                            isSingleEmoji(emoji) -> {
+                                selectedEmoji = emoji
+                                binding.selectedEmoji.text = selectedEmoji
+                            }
+                            else ->
+                                    Toast.makeText(
+                                                    requireContext(),
+                                                    "Please pick a single emoji",
+                                                    Toast.LENGTH_SHORT
+                                            )
+                                            .show()
+                        }
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
@@ -184,37 +187,39 @@ class AddStreakDialog(
         binding.spinnerFrequency.setSelection(0)
     }
 
-    private fun setupColorGrid() {
-        val grid = binding.colorGrid
-        grid.removeAllViews()
-        val context = requireContext()
-        val size = (48 * context.resources.displayMetrics.density).toInt() // 48dp
-        val margin = (6 * context.resources.displayMetrics.density).toInt() // 6dp
-        colorOptions.forEach { colorHex ->
-            val circle = View(context)
-            val params =
-                    GridLayout.LayoutParams().apply {
-                        width = size
-                        height = size
-                        setMargins(margin, margin, margin, margin)
-                    }
-            circle.layoutParams = params
-            circle.background =
-                    GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
-                        setColor(Color.parseColor(colorHex))
-                        setStroke(
-                                if (colorHex == selectedColor) 6 else 2,
-                                if (colorHex == selectedColor) Color.BLACK else Color.LTGRAY
-                        )
-                    }
-            circle.isSelected = colorHex == selectedColor
-            circle.setOnClickListener {
-                selectedColor = colorHex
-                setupColorGrid() // Refresh selection
-            }
-            grid.addView(circle)
+    private fun setupColorWheel() {
+        val initial =
+                try {
+                    Color.parseColor(selectedColor)
+                } catch (e: Exception) {
+                    Color.parseColor("#FF9900")
+                }
+        binding.hueWheel.setColor(initial)
+        binding.hueWheel.onColorChanged = { color ->
+            selectedColor = String.format("#%06X", 0xFFFFFF and color)
         }
+    }
+
+    /** Exactly one grapheme cluster, and it has to be an emoji — not letters or digits. */
+    private fun isSingleEmoji(text: String): Boolean {
+        if (text.isEmpty()) return false
+        val iterator = BreakIterator.getCharacterInstance()
+        iterator.setText(text)
+        iterator.first()
+        if (iterator.next() != text.length) return false
+
+        var hasEmojiCodePoint = false
+        var i = 0
+        while (i < text.length) {
+            val codePoint = text.codePointAt(i)
+            // Digits only appear in keycap sequences like 1️⃣ (which contain U+20E3)
+            if (Character.isLetterOrDigit(codePoint) || Character.isWhitespace(codePoint)) {
+                if (!text.contains('⃣')) return false
+            }
+            if (codePoint >= 0x2000) hasEmojiCodePoint = true
+            i += Character.charCount(codePoint)
+        }
+        return hasEmojiCodePoint
     }
 
     private fun setupClickListeners() {

@@ -3,6 +3,7 @@ package com.arihant.streaks.ui.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -11,73 +12,85 @@ import com.arihant.streaks.R
 import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.databinding.ItemStreakCardBinding
+import java.time.LocalDate
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 class StreaksAdapter(
-        private val onStreakToggled: (String, Boolean) -> Unit,
+        private val onStreakToggled: (String, Boolean, View) -> Unit,
         private val onStreakClicked: (Streak, View) -> Unit
 ) : ListAdapter<Streak, StreaksAdapter.StreakViewHolder>(DiffCallback()) {
-
-        // Whether to prefix active streak counts with 🔥 (user setting)
-        var showFlame: Boolean = true
-                set(value) {
-                        if (field != value) {
-                                field = value
-                                notifyDataSetChanged()
-                        }
-                }
 
         class StreakViewHolder(private val binding: ItemStreakCardBinding) :
                 RecyclerView.ViewHolder(binding.root) {
 
                 fun bind(
                         streak: Streak,
-                        onToggled: (String, Boolean) -> Unit,
-                        onClicked: (Streak, View) -> Unit,
-                        showFlame: Boolean
+                        onToggled: (String, Boolean, View) -> Unit,
+                        onClicked: (Streak, View) -> Unit
                 ) {
+                        val context = binding.root.context
                         binding.emojiIcon.text = streak.emoji
                         binding.streakName.text = streak.name
-                        binding.streakCount.text =
-                                if (streak.currentStreak == 0) {
-                                        binding.root.context.getString(R.string.streak_not_started)
-                                } else {
-                                        val unit =
-                                                when (streak.frequency) {
-                                                        FrequencyType.DAILY ->
-                                                                binding.root.context.resources
-                                                                        .getQuantityString(
-                                                                                R.plurals
-                                                                                        .streak_days,
-                                                                                streak.currentStreak,
-                                                                                streak.currentStreak
-                                                                        )
-                                                        FrequencyType.WEEKLY ->
-                                                                binding.root.context.resources
-                                                                        .getQuantityString(
-                                                                                R.plurals
-                                                                                        .streak_weeks,
-                                                                                streak.currentStreak,
-                                                                                streak.currentStreak
-                                                                        )
-                                                        FrequencyType.MONTHLY ->
-                                                                binding.root.context.resources
-                                                                        .getQuantityString(
-                                                                                R.plurals
-                                                                                        .streak_months,
-                                                                                streak.currentStreak,
-                                                                                streak.currentStreak
-                                                                        )
-                                                        FrequencyType.YEARLY ->
-                                                                binding.root.context.resources
-                                                                        .getQuantityString(
-                                                                                R.plurals
-                                                                                        .streak_years,
-                                                                                streak.currentStreak,
-                                                                                streak.currentStreak
-                                                                        )
-                                                }
-                                        if (showFlame) "🔥 $unit" else unit
+
+                        if (streak.currentStreak == 0) {
+                                binding.streakCount.text =
+                                        context.getString(R.string.streak_not_started)
+                                binding.streakCount.setTextColor(
+                                        ContextCompat.getColor(context, R.color.gray_dark)
+                                )
+                        } else {
+                                val plural =
+                                        when (streak.frequency) {
+                                                FrequencyType.DAILY -> R.plurals.streak_days
+                                                FrequencyType.WEEKLY -> R.plurals.streak_weeks
+                                                FrequencyType.MONTHLY -> R.plurals.streak_months
+                                                FrequencyType.YEARLY -> R.plurals.streak_years
+                                        }
+                                val unit =
+                                        context.resources.getQuantityString(
+                                                plural,
+                                                streak.currentStreak,
+                                                streak.currentStreak
+                                        )
+                                when (riskFor(streak)) {
+                                        Risk.LAST_DAY -> {
+                                                binding.streakCount.text =
+                                                        context.getString(
+                                                                R.string.streak_ends_today,
+                                                                unit
+                                                        )
+                                                binding.streakCount.setTextColor(
+                                                        ContextCompat.getColor(
+                                                                context,
+                                                                R.color.orange_dark
+                                                        )
+                                                )
+                                        }
+                                        Risk.AT_RISK -> {
+                                                binding.streakCount.text =
+                                                        context.getString(
+                                                                R.string.streak_at_risk,
+                                                                unit
+                                                        )
+                                                binding.streakCount.setTextColor(
+                                                        ContextCompat.getColor(
+                                                                context,
+                                                                R.color.orange_dark
+                                                        )
+                                                )
+                                        }
+                                        Risk.NONE -> {
+                                                binding.streakCount.text = unit
+                                                binding.streakCount.setTextColor(
+                                                        ContextCompat.getColor(
+                                                                context,
+                                                                R.color.gray_dark
+                                                        )
+                                                )
+                                        }
                                 }
+                        }
 
                         // Update completion circle
                         binding.completionCircle.isSelected = streak.isCompletedToday
@@ -154,7 +167,11 @@ class StreaksAdapter(
                                                 android.view.HapticFeedbackConstants.VIRTUAL_KEY
                                         )
                                 }
-                                onToggled(streak.id, !streak.isCompletedToday)
+                                onToggled(
+                                        streak.id,
+                                        !streak.isCompletedToday,
+                                        binding.completionCircle
+                                )
                         }
                         // Add click listener for the whole card
                         binding.root.setOnClickListener { onClicked(streak, binding.root) }
@@ -175,7 +192,7 @@ class StreaksAdapter(
         }
 
         override fun onBindViewHolder(holder: StreakViewHolder, position: Int) {
-                holder.bind(getItem(position), onStreakToggled, onStreakClicked, showFlame)
+                holder.bind(getItem(position), onStreakToggled, onStreakClicked)
         }
 
         private class DiffCallback : DiffUtil.ItemCallback<Streak>() {
@@ -193,5 +210,63 @@ class StreaksAdapter(
                 val item = currentList.removeAt(fromPosition)
                 currentList.add(toPosition, item)
                 submitList(currentList)
+        }
+
+        private enum class Risk {
+                NONE,
+                AT_RISK,
+                LAST_DAY
+        }
+
+        companion object {
+                /**
+                 * A streak is at risk when the remaining days in its period are only
+                 * just enough (or not enough) to still meet the frequency requirement.
+                 */
+                private fun riskFor(streak: Streak): Risk {
+                        val today = LocalDate.now()
+                        val completionsThisPeriod =
+                                streak.asLocalDateCompletions().count {
+                                        samePeriod(it, today, streak.frequency)
+                                }
+                        val needed = streak.frequencyCount - completionsThisPeriod
+                        if (needed <= 0) return Risk.NONE
+
+                        val daysLeft =
+                                when (streak.frequency) {
+                                        FrequencyType.DAILY -> 1
+                                        FrequencyType.WEEKLY -> {
+                                                val weekFields = WeekFields.of(Locale.getDefault())
+                                                8 - today.get(weekFields.dayOfWeek())
+                                        }
+                                        FrequencyType.MONTHLY ->
+                                                today.lengthOfMonth() - today.dayOfMonth + 1
+                                        FrequencyType.YEARLY ->
+                                                today.lengthOfYear() - today.dayOfYear + 1
+                                }
+                        return when {
+                                daysLeft > needed -> Risk.NONE
+                                daysLeft == 1 -> Risk.LAST_DAY
+                                else -> Risk.AT_RISK
+                        }
+                }
+
+                private fun samePeriod(
+                        date: LocalDate,
+                        other: LocalDate,
+                        frequency: FrequencyType
+                ): Boolean {
+                        return when (frequency) {
+                                FrequencyType.DAILY -> date == other
+                                FrequencyType.WEEKLY -> {
+                                        val weekFields = WeekFields.of(Locale.getDefault())
+                                        date.with(weekFields.dayOfWeek(), 1) ==
+                                                other.with(weekFields.dayOfWeek(), 1)
+                                }
+                                FrequencyType.MONTHLY ->
+                                        date.month == other.month && date.year == other.year
+                                FrequencyType.YEARLY -> date.year == other.year
+                        }
+                }
         }
 }

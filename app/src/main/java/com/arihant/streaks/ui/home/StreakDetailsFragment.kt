@@ -45,6 +45,7 @@ class StreakDetailsFragment : Fragment() {
         private var currentStreakUnitView: TextView? = null
         private var bestStreakNumberView: TextView? = null
         private var bestStreakUnitView: TextView? = null
+        private var quickStatsRow: LinearLayout? = null
 
         override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
@@ -86,6 +87,9 @@ class StreakDetailsFragment : Fragment() {
                 yearGraphContainerLayoutParams.height =
                         android.view.ViewGroup.LayoutParams.WRAP_CONTENT
                 binding.yearGraphContainer.layoutParams = yearGraphContainerLayoutParams
+
+                // --- Quick stats (total / this month / this year) ---
+                renderQuickStats(binding, streak)
 
                 // --- Monthly view ---
                 setupMonthlyViewWithNavigation(binding, streak)
@@ -161,6 +165,7 @@ class StreakDetailsFragment : Fragment() {
                         binding.yearGraphContainer.removeAllViews()
                         binding.yearGraphContainer.addView(createYearGraphView(updated))
                         refreshMonthlyView(binding, updated)
+                        renderQuickStats(binding, updated)
                 }
 
                 return binding.root
@@ -172,6 +177,90 @@ class StreakDetailsFragment : Fragment() {
                 currentStreakUnitView = null
                 bestStreakNumberView = null
                 bestStreakUnitView = null
+                quickStatsRow = null
+        }
+
+        private fun renderQuickStats(binding: FragmentStreakDetailsBinding, streak: Streak) {
+                val parent = binding.yearGraphContainer.parent as ViewGroup
+                quickStatsRow?.let { parent.removeView(it) }
+
+                val row =
+                        android.widget.LinearLayout(requireContext()).apply {
+                                orientation = android.widget.LinearLayout.HORIZONTAL
+                                layoutParams =
+                                        android.widget.LinearLayout.LayoutParams(
+                                                android.widget.LinearLayout.LayoutParams
+                                                        .MATCH_PARENT,
+                                                android.widget.LinearLayout.LayoutParams
+                                                        .WRAP_CONTENT
+                                        )
+                                setPadding(0, dpToPx(4), 0, dpToPx(12))
+                        }
+
+                fun tile(value: String, label: String): android.widget.LinearLayout {
+                        return android.widget.LinearLayout(requireContext()).apply {
+                                orientation = android.widget.LinearLayout.VERTICAL
+                                gravity = android.view.Gravity.CENTER
+                                layoutParams =
+                                        android.widget.LinearLayout.LayoutParams(
+                                                0,
+                                                android.widget.LinearLayout.LayoutParams
+                                                        .WRAP_CONTENT,
+                                                1f
+                                        )
+                                addView(
+                                        android.widget.TextView(requireContext()).apply {
+                                                text = value
+                                                textSize = 22f
+                                                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                                                setTextColor(
+                                                        resolveThemeColor(
+                                                                requireContext(),
+                                                                com.google
+                                                                        .android
+                                                                        .material
+                                                                        .R
+                                                                        .attr
+                                                                        .colorOnSurface
+                                                        )
+                                                )
+                                                gravity = android.view.Gravity.CENTER
+                                        }
+                                )
+                                addView(
+                                        android.widget.TextView(requireContext()).apply {
+                                                text = label
+                                                textSize = 12f
+                                                setTextColor(
+                                                        resolveThemeColor(
+                                                                requireContext(),
+                                                                com.google
+                                                                        .android
+                                                                        .material
+                                                                        .R
+                                                                        .attr
+                                                                        .colorOnSurfaceVariant
+                                                        )
+                                                )
+                                                gravity = android.view.Gravity.CENTER
+                                        }
+                                )
+                        }
+                }
+
+                val completions = streak.asLocalDateCompletions()
+                val now = java.time.LocalDate.now()
+                row.addView(tile("${completions.size}", "Total"))
+                row.addView(
+                        tile(
+                                "${completions.count { it.year == now.year && it.month == now.month }}",
+                                "This Month"
+                        )
+                )
+                row.addView(tile("${completions.count { it.year == now.year }}", "This Year"))
+
+                parent.addView(row, parent.indexOfChild(binding.yearGraphContainer) + 1)
+                quickStatsRow = row
         }
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

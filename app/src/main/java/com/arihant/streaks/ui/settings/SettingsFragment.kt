@@ -99,7 +99,6 @@ class SettingsFragment : Fragment() {
 
         setupClickListeners()
         setupNotificationSwitch()
-        setupShowFlameSwitch()
         setupNotificationChannelButton()
         setupTestNotificationButton()
         setupThemeSpinner()
@@ -164,12 +163,6 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun setupShowFlameSwitch() {
-        binding.switchShowFlame.setOnCheckedChangeListener { _, isChecked ->
-            settingsViewModel.setShowFlame(isChecked)
-        }
-    }
-
     private fun setupThemeSpinner() {
         val adapter =
                 ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, themeOptions)
@@ -230,8 +223,7 @@ class SettingsFragment : Fragment() {
         val settings =
                 mapOf(
                         "theme" to settingsViewModel.theme.value,
-                        "notifications_enabled" to settingsViewModel.notificationsEnabled.value,
-                        "show_flame" to settingsViewModel.showFlame.value
+                        "notifications_enabled" to settingsViewModel.notificationsEnabled.value
                 )
         val exportObj = mapOf("settings" to settings, "streaks" to streaks)
         val json = Gson().toJson(exportObj)
@@ -294,7 +286,6 @@ class SettingsFragment : Fragment() {
                 val notifications = settings["notifications_enabled"] as? Boolean ?: false
                 settingsViewModel.setTheme(theme)
                 settingsViewModel.setNotificationEnabled(notifications)
-                settingsViewModel.setShowFlame(settings["show_flame"] as? Boolean ?: true)
                 binding.switchEnableNotifications.isChecked = notifications
                 applyTheme(theme)
             }
@@ -332,13 +323,6 @@ class SettingsFragment : Fragment() {
             settingsViewModel.notificationsEnabled.collectLatest { enabled ->
                 if (binding.switchEnableNotifications.isChecked != enabled) {
                     binding.switchEnableNotifications.isChecked = enabled
-                }
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            settingsViewModel.showFlame.collectLatest { show ->
-                if (binding.switchShowFlame.isChecked != show) {
-                    binding.switchShowFlame.isChecked = show
                 }
             }
         }

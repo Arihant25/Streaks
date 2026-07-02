@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.arihant.streaks.R
+import com.arihant.streaks.receivers.CompleteStreakReceiver
 import kotlinx.coroutines.flow.first
 
 class ReminderWorker(private val context: Context, params: WorkerParameters) :
@@ -83,6 +84,24 @@ class ReminderWorker(private val context: Context, params: WorkerParameters) :
     }
 
     private fun showNotification(streakId: String, streakName: String, reminderText: String) {
+        val notificationId = streakId.hashCode()
+
+        // "Mark done" action completes the streak without opening the app
+        val markDoneIntent =
+                android.content.Intent(context, CompleteStreakReceiver::class.java).apply {
+                    action = CompleteStreakReceiver.ACTION_MARK_DONE
+                    putExtra(CompleteStreakReceiver.EXTRA_STREAK_ID, streakId)
+                    putExtra(CompleteStreakReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+                }
+        val markDonePendingIntent =
+                android.app.PendingIntent.getBroadcast(
+                        context,
+                        notificationId,
+                        markDoneIntent,
+                        android.app.PendingIntent.FLAG_IMMUTABLE or
+                                android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                )
+
         val notification =
                 NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_notification_24) // You'll need to add this icon
@@ -92,11 +111,12 @@ class ReminderWorker(private val context: Context, params: WorkerParameters) :
                         .setAutoCancel(true)
                         .setVibrate(longArrayOf(0, 250, 250, 250))
                         .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                        .addAction(R.drawable.ic_check_24, "Mark done", markDonePendingIntent)
                         .build()
 
         val notificationManager = NotificationManagerCompat.from(context)
         try {
-            notificationManager.notify(streakId.hashCode(), notification)
+            notificationManager.notify(notificationId, notification)
         } catch (e: SecurityException) {
             // Permission denied, ignore
         }

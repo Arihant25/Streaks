@@ -79,6 +79,19 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:listitem="@layout/item_streak_card" />
 
+    <!-- Add streak -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_streak"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:contentDescription="@string/add_new_streak"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/orange"
+        app:tint="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Confetti overlay (always on top, never intercepts touches) -->
     <nl.dionsegijn.konfetti.xml.KonfettiView
         android:id="@+id/konfetti_view"
