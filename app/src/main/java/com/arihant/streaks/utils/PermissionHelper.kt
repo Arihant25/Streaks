@@ -7,8 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class PermissionHelper {
 
@@ -26,7 +26,7 @@ class PermissionHelper {
         }
 
         private fun showBatteryOptimizationDialog(fragment: Fragment) {
-            AlertDialog.Builder(fragment.requireContext())
+            MaterialAlertDialogBuilder(fragment.requireContext())
                     .setTitle("Battery Optimization")
                     .setMessage(
                             "To ensure reliable notifications, please disable battery optimization for this app. This will allow reminders to work properly even when the app is in the background."
@@ -72,7 +72,7 @@ class PermissionHelper {
 
         fun requestExactAlarmPermission(fragment: Fragment) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                AlertDialog.Builder(fragment.requireContext())
+                MaterialAlertDialogBuilder(fragment.requireContext())
                         .setTitle("Exact Alarms Permission")
                         .setMessage(
                                 "This app needs permission to schedule exact alarms for precise reminder notifications. Please grant this permission in the next screen."

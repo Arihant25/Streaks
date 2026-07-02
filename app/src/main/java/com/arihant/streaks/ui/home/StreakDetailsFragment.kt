@@ -1,6 +1,5 @@
 package com.arihant.streaks.ui.home
 
-import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -29,7 +28,8 @@ import com.arihant.streaks.data.Streak
 import com.arihant.streaks.databinding.FragmentStreakDetailsBinding
 import com.arihant.streaks.ui.dialogs.AddStreakDialog
 import com.arihant.streaks.utils.NotificationScheduler
-import com.google.android.material.transition.platform.MaterialSharedAxis
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.transition.MaterialContainerTransform
 
 class StreakDetailsFragment : Fragment() {
         private val args: StreakDetailsFragmentArgs by navArgs()
@@ -48,13 +48,16 @@ class StreakDetailsFragment : Fragment() {
 
         override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                // Predictive back: Material motion for enter/return
-                enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
-                returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
-                // Optional: For a smoother transition, you can also set exit and reenter
-                // transitions
-                // exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
-                // reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
+                // The tapped card morphs into this page (and back on return)
+                sharedElementEnterTransition =
+                        MaterialContainerTransform().apply {
+                                drawingViewId = R.id.nav_host_fragment_activity_main
+                                duration = 400L
+                                scrimColor = Color.TRANSPARENT
+                                setAllContainerColors(
+                                        ContextCompat.getColor(requireContext(), R.color.white)
+                                )
+                        }
         }
 
         override fun onCreateView(
@@ -96,12 +99,14 @@ class StreakDetailsFragment : Fragment() {
                 binding.buttonEdit.setOnClickListener {
                         val dialog =
                                 AddStreakDialog(
-                                        onStreakAdded = { name, emoji, _, _, color ->
-                                                homeViewModel.updateStreakNameEmojiColor(
+                                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
+                                                homeViewModel.updateStreakDetails(
                                                         streak.id,
                                                         name,
                                                         emoji,
                                                         color,
+                                                        frequency,
+                                                        frequencyCount,
                                                         requireContext()
                                                 )
                                                 Toast.makeText(
@@ -112,6 +117,8 @@ class StreakDetailsFragment : Fragment() {
                                                         .show()
                                                 binding.textName.text = name
                                                 binding.textEmoji.text = emoji
+                                                binding.textFrequency.text =
+                                                        formatFrequency(frequency, frequencyCount)
                                         },
                                         isEditMode = true,
                                         initialFrequency = streak.frequency,
@@ -125,7 +132,7 @@ class StreakDetailsFragment : Fragment() {
 
                 // --- Delete button ---
                 binding.buttonDelete.setOnClickListener {
-                        AlertDialog.Builder(requireContext())
+                        MaterialAlertDialogBuilder(requireContext())
                                 .setTitle("Delete Streak")
                                 .setMessage("Are you sure you want to delete this streak?")
                                 .setPositiveButton("Delete") { _, _ ->
@@ -403,6 +410,24 @@ class StreakDetailsFragment : Fragment() {
                 // Remove old layout and add new one
                 grandParent.removeView(parentContainer)
                 grandParent.addView(streakStatsContainer, parentIndex)
+
+                // Count the big numbers up from zero as the page opens
+                animateCountUp(currentStreakNumber, streak.currentStreak)
+                animateCountUp(bestStreakNumber, streak.bestStreak)
+        }
+
+        private fun animateCountUp(view: TextView, target: Int) {
+                if (target <= 0) {
+                        view.text = "$target"
+                        return
+                }
+                android.animation.ValueAnimator.ofInt(0, target).apply {
+                        duration = 700
+                        startDelay = 250 // Let the container transform land first
+                        interpolator = android.view.animation.DecelerateInterpolator()
+                        addUpdateListener { view.text = "${it.animatedValue}" }
+                        start()
+                }
         }
 
         private fun updateStreakStats(streak: Streak) {
@@ -499,7 +524,7 @@ class StreakDetailsFragment : Fragment() {
                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                 )
 
-                val colorEmpty = Color.parseColor("#EBEDF0")
+                val colorEmpty = ContextCompat.getColor(context, R.color.gray_medium)
                 val colorCompleted = streakColor
 
                 // GitHub-style: organize by weeks (columns) and days of week (rows)
@@ -533,11 +558,12 @@ class StreakDetailsFragment : Fragment() {
 
                         // Only show and fill cells within the current year
                         if (cellDate.year == year) {
-                            if (completions.contains(cellDate)) {
-                                cellView.setBackgroundColor(colorCompleted)
-                            } else {
-                                cellView.setBackgroundColor(colorEmpty)
-                            }
+                            val cellDrawable = GradientDrawable()
+                            cellDrawable.cornerRadius = dpToPx(3).toFloat()
+                            cellDrawable.setColor(
+                                if (completions.contains(cellDate)) colorCompleted else colorEmpty
+                            )
+                            cellView.background = cellDrawable
                         } else {
                             // Make cells outside the year transparent
                             cellView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
@@ -890,7 +916,7 @@ class StreakDetailsFragment : Fragment() {
                 getString(R.string.confirm_mark_completed)
             }
 
-            AlertDialog.Builder(requireContext())
+            MaterialAlertDialogBuilder(requireContext())
                 .setTitle(title)
                 .setMessage("$message\n$dateStr")
                 .setPositiveButton(getString(R.string.yes)) { _, _ ->
@@ -1031,7 +1057,7 @@ class StreakDetailsFragment : Fragment() {
                 removeButton.visibility = if (reminder != null) View.VISIBLE else View.GONE
 
                 val dialog =
-                        AlertDialog.Builder(requireContext())
+                        MaterialAlertDialogBuilder(requireContext())
                                 .setTitle("Set Reminder")
                                 .setView(dialogView)
                                 .setPositiveButton("Save") { _, _ ->

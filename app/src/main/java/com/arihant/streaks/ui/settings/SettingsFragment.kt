@@ -27,7 +27,7 @@ import com.arihant.streaks.data.StreakExportDto
 import com.arihant.streaks.databinding.FragmentSettingsBinding
 import com.arihant.streaks.ui.dialogs.AddStreakDialog
 import com.arihant.streaks.utils.PermissionHelper
-import com.google.android.material.transition.platform.MaterialSharedAxis
+import com.google.android.material.transition.MaterialSharedAxis
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.BufferedReader
@@ -46,7 +46,7 @@ class SettingsFragment : Fragment() {
     private val settingsViewModel: SettingsViewModel by viewModels {
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(requireActivity().application) as T
+                return modelClass.cast(SettingsViewModel(requireActivity().application))!!
             }
         }
     }
@@ -99,6 +99,7 @@ class SettingsFragment : Fragment() {
 
         setupClickListeners()
         setupNotificationSwitch()
+        setupShowFlameSwitch()
         setupNotificationChannelButton()
         setupTestNotificationButton()
         setupThemeSpinner()
@@ -163,6 +164,12 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    private fun setupShowFlameSwitch() {
+        binding.switchShowFlame.setOnCheckedChangeListener { _, isChecked ->
+            settingsViewModel.setShowFlame(isChecked)
+        }
+    }
+
     private fun setupThemeSpinner() {
         val adapter =
                 ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, themeOptions)
@@ -223,7 +230,8 @@ class SettingsFragment : Fragment() {
         val settings =
                 mapOf(
                         "theme" to settingsViewModel.theme.value,
-                        "notifications_enabled" to settingsViewModel.notificationsEnabled.value
+                        "notifications_enabled" to settingsViewModel.notificationsEnabled.value,
+                        "show_flame" to settingsViewModel.showFlame.value
                 )
         val exportObj = mapOf("settings" to settings, "streaks" to streaks)
         val json = Gson().toJson(exportObj)
@@ -237,6 +245,7 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun importDataFromUri(uri: Uri) {
         try {
             val json =
@@ -285,6 +294,7 @@ class SettingsFragment : Fragment() {
                 val notifications = settings["notifications_enabled"] as? Boolean ?: false
                 settingsViewModel.setTheme(theme)
                 settingsViewModel.setNotificationEnabled(notifications)
+                settingsViewModel.setShowFlame(settings["show_flame"] as? Boolean ?: true)
                 binding.switchEnableNotifications.isChecked = notifications
                 applyTheme(theme)
             }
@@ -322,6 +332,13 @@ class SettingsFragment : Fragment() {
             settingsViewModel.notificationsEnabled.collectLatest { enabled ->
                 if (binding.switchEnableNotifications.isChecked != enabled) {
                     binding.switchEnableNotifications.isChecked = enabled
+                }
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            settingsViewModel.showFlame.collectLatest { show ->
+                if (binding.switchShowFlame.isChecked != show) {
+                    binding.switchShowFlame.isChecked = show
                 }
             }
         }

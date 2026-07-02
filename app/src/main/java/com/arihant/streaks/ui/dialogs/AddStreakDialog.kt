@@ -11,8 +11,8 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.GridLayout
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.arihant.streaks.R
 import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.databinding.DialogAddStreakBinding
@@ -73,19 +73,20 @@ class AddStreakDialog(
                 selectedEmoji = it
                 binding.selectedEmoji.text = it
             }
-            // Hide frequency-related views in edit mode
-            binding.spinnerFrequency.visibility = View.GONE
-            binding.inputLayoutCount.visibility = View.GONE
-            // Hide the frequency label (TextView just above spinner)
-            val parent = binding.spinnerFrequency.parent as ViewGroup
-            val spinnerIndex = parent.indexOfChild(binding.spinnerFrequency)
-            if (spinnerIndex > 0) {
-                val labelView = parent.getChildAt(spinnerIndex - 1)
-                if (labelView is android.widget.TextView &&
-                                labelView.text == getString(R.string.frequency)
-                ) {
-                    labelView.visibility = View.GONE
-                }
+            // Prefill frequency but keep it editable; saving recalculates the
+            // streak counts against the new frequency
+            initialFrequency?.let { frequency ->
+                val freqIndex =
+                        when (frequency) {
+                            FrequencyType.DAILY -> 0
+                            FrequencyType.WEEKLY -> 1
+                            FrequencyType.MONTHLY -> 2
+                            FrequencyType.YEARLY -> 3
+                        }
+                binding.spinnerFrequency.setSelection(freqIndex)
+            }
+            initialFrequencyCount?.let {
+                binding.editFrequencyCount.setText(it.toString())
             }
         } else {
             if (initialFrequency != null) {
@@ -105,7 +106,7 @@ class AddStreakDialog(
             }
         }
 
-        return AlertDialog.Builder(requireContext()).setView(binding.root).create()
+        return MaterialAlertDialogBuilder(requireContext()).setView(binding.root).create()
     }
 
     private fun setupEmojiPicker() {
@@ -118,7 +119,7 @@ class AddStreakDialog(
             input.setText("") // Do not prefill
             // Enable emoji support
             input.imeOptions = EditorInfo.IME_ACTION_DONE
-            AlertDialog.Builder(requireContext())
+            MaterialAlertDialogBuilder(requireContext())
                     .setTitle("Pick Emoji")
                     .setView(input)
                     .setPositiveButton("OK") { _, _ ->

@@ -428,19 +428,30 @@ class StreakRepository {
         }
     }
 
-    fun updateStreakNameEmojiColor(
+    fun updateStreakDetails(
             streakId: String,
             name: String,
             emoji: String,
             color: String,
+            frequency: FrequencyType,
+            frequencyCount: Int,
             context: Context? = null
     ) {
         val currentStreaks = _streaks.value?.toMutableList() ?: return
         val index = currentStreaks.indexOfFirst { it.id == streakId }
         if (index != -1) {
-            val streak = currentStreaks[index]
-            val updatedStreak = streak.copy(name = name, emoji = emoji, color = color)
-            currentStreaks[index] = updatedStreak
+            val updatedStreak =
+                    currentStreaks[index].copy(
+                            name = name,
+                            emoji = emoji,
+                            color = color,
+                            frequency = frequency,
+                            frequencyCount = frequencyCount
+                    )
+            // A frequency change reshapes the periods, so re-derive current and
+            // best streaks from the completion history
+            currentStreaks[index] =
+                    recalculateStreakFromCompletions(updatedStreak, updatedStreak.completions)
             _streaks.value = currentStreaks
             context?.let {
                 saveStreaksToFile(it)

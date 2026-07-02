@@ -39,14 +39,24 @@ class HomeViewModel : ViewModel() {
         repository.removeStreakReminder(streakId, context)
     }
 
-    fun updateStreakNameEmojiColor(
+    fun updateStreakDetails(
             streakId: String,
             name: String,
             emoji: String,
             color: String,
+            frequency: com.arihant.streaks.data.FrequencyType,
+            frequencyCount: Int,
             context: android.content.Context
     ) {
-        repository.updateStreakNameEmojiColor(streakId, name, emoji, color, context)
+        repository.updateStreakDetails(
+                streakId,
+                name,
+                emoji,
+                color,
+                frequency,
+                frequencyCount,
+                context
+        )
     }
 
     fun reorderStreaks(newOrder: List<String>, context: android.content.Context) {

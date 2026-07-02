@@ -9,6 +9,7 @@
     app:cardElevation="2dp"
     android:clickable="true"
     android:focusable="true"
+    android:stateListAnimator="@animator/card_press"
     android:foreground="?android:attr/selectableItemBackground">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -55,6 +56,16 @@
             app:layout_constraintStart_toEndOf="@id/emoji_icon"
             app:layout_constraintEnd_toStartOf="@id/completion_circle"
             app:layout_constraintTop_toBottomOf="@id/streak_name" />
+
+        <!-- Pulse ring (bursts outward when a streak is completed) -->
+        <View
+            android:id="@+id/pulse_ring"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <!-- Completion Circle -->
         <androidx.constraintlayout.widget.ConstraintLayout

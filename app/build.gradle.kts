@@ -52,4 +52,5 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.transition)
     implementation("com.google.android.material:material:1.11.0")
+    implementation("nl.dionsegijn:konfetti-xml:2.0.4")
 }

@@ -17,13 +17,23 @@ class StreaksAdapter(
         private val onStreakClicked: (Streak, View) -> Unit
 ) : ListAdapter<Streak, StreaksAdapter.StreakViewHolder>(DiffCallback()) {
 
+        // Whether to prefix active streak counts with 🔥 (user setting)
+        var showFlame: Boolean = true
+                set(value) {
+                        if (field != value) {
+                                field = value
+                                notifyDataSetChanged()
+                        }
+                }
+
         class StreakViewHolder(private val binding: ItemStreakCardBinding) :
                 RecyclerView.ViewHolder(binding.root) {
 
                 fun bind(
                         streak: Streak,
                         onToggled: (String, Boolean) -> Unit,
-                        onClicked: (Streak, View) -> Unit
+                        onClicked: (Streak, View) -> Unit,
+                        showFlame: Boolean
                 ) {
                         binding.emojiIcon.text = streak.emoji
                         binding.streakName.text = streak.name
@@ -66,7 +76,7 @@ class StreaksAdapter(
                                                                                 streak.currentStreak
                                                                         )
                                                 }
-                                        unit
+                                        if (showFlame) "🔥 $unit" else unit
                                 }
 
                         // Update completion circle
@@ -94,10 +104,56 @@ class StreaksAdapter(
                         }
 
                         binding.completionCircle.setOnClickListener {
-                                // Haptic feedback
-                                binding.completionCircle.performHapticFeedback(
-                                        android.view.HapticFeedbackConstants.VIRTUAL_KEY
-                                )
+                                if (!streak.isCompletedToday) {
+                                        // Completing: satisfying pop + confirm haptic
+                                        binding.completionCircle.performHapticFeedback(
+                                                android.view.HapticFeedbackConstants.CONFIRM
+                                        )
+                                        // Color pulse bursting outward from the circle
+                                        val pulseDrawable =
+                                                android.graphics.drawable.GradientDrawable()
+                                        pulseDrawable.shape =
+                                                android.graphics.drawable.GradientDrawable.OVAL
+                                        pulseDrawable.setColor(color)
+                                        binding.pulseRing.background = pulseDrawable
+                                        binding.pulseRing.visibility = View.VISIBLE
+                                        binding.pulseRing.alpha = 0.4f
+                                        binding.pulseRing.scaleX = 1f
+                                        binding.pulseRing.scaleY = 1f
+                                        binding.pulseRing
+                                                .animate()
+                                                .scaleX(2.1f)
+                                                .scaleY(2.1f)
+                                                .alpha(0f)
+                                                .setDuration(500)
+                                                .withEndAction {
+                                                        binding.pulseRing.visibility =
+                                                                View.INVISIBLE
+                                                }
+                                                .start()
+                                        binding.completionCircle
+                                                .animate()
+                                                .scaleX(1.2f)
+                                                .scaleY(1.2f)
+                                                .setDuration(120)
+                                                .withEndAction {
+                                                        binding.completionCircle
+                                                                .animate()
+                                                                .scaleX(1f)
+                                                                .scaleY(1f)
+                                                                .setDuration(200)
+                                                                .setInterpolator(
+                                                                        android.view.animation
+                                                                                .OvershootInterpolator()
+                                                                )
+                                                                .start()
+                                                }
+                                                .start()
+                                } else {
+                                        binding.completionCircle.performHapticFeedback(
+                                                android.view.HapticFeedbackConstants.VIRTUAL_KEY
+                                        )
+                                }
                                 onToggled(streak.id, !streak.isCompletedToday)
                         }
                         // Add click listener for the whole card
@@ -119,7 +175,7 @@ class StreaksAdapter(
         }
 
         override fun onBindViewHolder(holder: StreakViewHolder, position: Int) {
-                holder.bind(getItem(position), onStreakToggled, onStreakClicked)
+                holder.bind(getItem(position), onStreakToggled, onStreakClicked, showFlame)
         }
 
         private class DiffCallback : DiffUtil.ItemCallback<Streak>() {
