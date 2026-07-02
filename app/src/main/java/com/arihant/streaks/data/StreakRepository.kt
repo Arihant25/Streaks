@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.arihant.streaks.utils.WeekConfig
 import com.arihant.streaks.widgets.StreaksWidgetProvider
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -13,8 +14,6 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.WeekFields
-import java.util.Locale
 import java.util.UUID
 
 class StreakRepository {
@@ -26,6 +25,8 @@ class StreakRepository {
     private val formatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     fun loadStreaksFromFile(context: Context) {
+        // Week boundaries in the recalculation below depend on the configured start day
+        WeekConfig.init(context)
         try {
             val file = File(context.filesDir, fileName)
             if (!file.exists()) return
@@ -226,8 +227,7 @@ class StreakRepository {
             val period = when (streak.frequency) {
                 FrequencyType.DAILY -> date
                 FrequencyType.WEEKLY -> {
-                    val weekFields = WeekFields.of(Locale.getDefault())
-                    date.with(weekFields.dayOfWeek(), 1)
+                    date.with(WeekConfig.weekFields().dayOfWeek(), 1)
                 }
                 FrequencyType.MONTHLY -> date.withDayOfMonth(1)
                 FrequencyType.YEARLY -> date.withDayOfYear(1)
@@ -273,8 +273,7 @@ class StreakRepository {
         val todayPeriod = when (streak.frequency) {
             FrequencyType.DAILY -> today
             FrequencyType.WEEKLY -> {
-                val weekFields = WeekFields.of(Locale.getDefault())
-                today.with(weekFields.dayOfWeek(), 1)
+                today.with(WeekConfig.weekFields().dayOfWeek(), 1)
             }
             FrequencyType.MONTHLY -> today.withDayOfMonth(1)
             FrequencyType.YEARLY -> today.withDayOfYear(1)
@@ -355,7 +354,7 @@ class StreakRepository {
                 when (streak.frequency) {
                     FrequencyType.DAILY -> completionsAsDate.filter { it == today }
                     FrequencyType.WEEKLY -> {
-                        val weekFields = WeekFields.of(Locale.getDefault())
+                        val weekFields = WeekConfig.weekFields()
                         val weekOfYear = today.get(weekFields.weekOfWeekBasedYear())
                         completionsAsDate.filter {
                             it.get(weekFields.weekOfWeekBasedYear()) == weekOfYear &&
@@ -380,7 +379,7 @@ class StreakRepository {
                     when (streak.frequency) {
                         FrequencyType.DAILY -> today != lastCompletedDate
                         FrequencyType.WEEKLY -> {
-                            val weekFields = WeekFields.of(Locale.getDefault())
+                            val weekFields = WeekConfig.weekFields()
                             val currentWeek = today.get(weekFields.weekOfWeekBasedYear())
                             val lastWeek = lastCompletedDate.get(weekFields.weekOfWeekBasedYear())
                             currentWeek != lastWeek || today.year != lastCompletedDate.year

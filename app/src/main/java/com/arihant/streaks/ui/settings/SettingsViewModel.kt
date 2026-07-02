@@ -13,6 +13,8 @@ import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.data.StreakExportDto
 import com.arihant.streaks.data.StreakRepository
+import com.arihant.streaks.utils.WeekConfig
+import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -57,6 +59,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             context.dataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
         }
+    }
+
+    fun setFirstDayOfWeek(day: DayOfWeek) {
+        WeekConfig.setFirstDayOfWeek(context, day)
+        // Weekly periods shift with the week boundary, so re-derive streak counts
+        repository.recalculateAllStreaks(context)
     }
 
     fun addStreak(

@@ -1,20 +1,32 @@
 package com.arihant.streaks.ui.dialogs
 
 import android.app.Dialog
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.TypedValue
+import android.view.HapticFeedbackConstants
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.WindowCompat
+import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.GridLayout
+import android.widget.TextView
 import android.widget.Toast
-import androidx.fragment.app.DialogFragment
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.core.graphics.ColorUtils
+import androidx.transition.AutoTransition
+import androidx.transition.TransitionManager
 import com.arihant.streaks.R
 import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.databinding.DialogAddStreakBinding
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.BreakIterator
 
 class AddStreakDialog(
@@ -25,38 +37,78 @@ class AddStreakDialog(
         private val initialName: String? = null,
         private val initialEmoji: String? = null,
         private val initialColor: String? = null
-) : DialogFragment() {
+) : BottomSheetDialogFragment() {
 
     private var _binding: DialogAddStreakBinding? = null
     private val binding
         get() = _binding!!
 
-    private var selectedEmoji: String = "🔥"
-    private val EMOJI_PICKER_REQUEST = 1001
+    private var selectedEmoji: String = initialEmoji ?: "🔥"
     private var selectedColor: String = initialColor ?: "#FF9900"
+    private var selectedCount: Int = initialFrequencyCount ?: 1
+
+    companion object {
+        private val DEFAULT_EMOJIS =
+                listOf(
+                        // Fitness & sports
+                        "💪", "🏃", "🏋️", "🚴", "🧘", "🏊", "🤸", "🧗", "🚶", "⚽",
+                        "🏀", "🎾", "🥊", "🏸", "⛰️",
+                        // Health & self-care
+                        "💧", "🥗", "🍎", "🥦", "☕", "💊", "😴", "🛏️", "🪥", "🚿",
+                        // Learning & work
+                        "📚", "✍️", "🧠", "💻", "🗣️", "♟️", "📝", "🎓",
+                        // Creative
+                        "🎸", "🎹", "🥁", "🎤", "🎻", "🎨", "📷", "🧶",
+                        // Home & life
+                        "🌱", "🐕", "🐈", "🧹", "🍳", "🍵", "💰", "📈", "🙏", "🧎",
+                        // Mood & world
+                        "❤️", "📞", "🎮", "🌊", "🌍", "♻️", "☀️", "🌙", "⭐", "🎯",
+                        "⚡", "🔥"
+                )
+
+        /** The handful shown in the quick-pick row; anything else via "Type any emoji". */
+        private val QUICK_PICK_EMOJIS = listOf("💪", "📚", "🏃", "💧", "🧘")
+
+        /** The first streak keeps the classic fire; later ones get a random suggestion. */
+        fun defaultEmojiFor(existingStreakCount: Int): String =
+                if (existingStreakCount == 0) "🔥" else DEFAULT_EMOJIS.random()
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        _binding = DialogAddStreakBinding.inflate(layoutInflater)
+        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        dialog.behavior.skipCollapsed = true
+        // Keep the name field visible above the keyboard
+        dialog.window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
+        return dialog
+    }
 
-        // Set dialog title based on mode
-        val titleTextView = (_binding?.root as ViewGroup).getChildAt(0)
-        if (titleTextView is android.widget.TextView) {
-            titleTextView.text =
-                    if (isEditMode) getString(R.string.edit_streak)
-                    else getString(R.string.create_streak)
-        }
-        // Set button text based on mode
-        binding.btnCreate.text =
+    override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+    ): View {
+        _binding = DialogAddStreakBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding.sheetTitle.text =
                 if (isEditMode) getString(R.string.edit_streak)
+                else getString(R.string.create_streak)
+        binding.btnCreate.text =
+                if (isEditMode) getString(R.string.save_changes)
                 else getString(R.string.create_streak)
 
         setupEmojiPicker()
-        setupFrequencySpinner()
+        setupFrequencyToggle()
+        setupCountStepper()
         setupColorWheel()
         setupClickListeners()
 
         if (isEditMode) {
-            // Prefill name and emoji
             initialName?.let { binding.editStreakName.setText(it) }
             initialEmoji?.let {
                 selectedEmoji = it
@@ -64,143 +116,267 @@ class AddStreakDialog(
             }
             // Prefill frequency but keep it editable; saving recalculates the
             // streak counts against the new frequency
-            initialFrequency?.let { frequency ->
-                val freqIndex =
-                        when (frequency) {
-                            FrequencyType.DAILY -> 0
-                            FrequencyType.WEEKLY -> 1
-                            FrequencyType.MONTHLY -> 2
-                            FrequencyType.YEARLY -> 3
-                        }
-                binding.spinnerFrequency.setSelection(freqIndex)
-            }
-            initialFrequencyCount?.let {
-                binding.editFrequencyCount.setText(it.toString())
-            }
+            initialFrequency?.let { checkFrequency(it) }
         } else {
             if (initialFrequency != null) {
-                val freqIndex =
-                        when (initialFrequency) {
-                            FrequencyType.DAILY -> 0
-                            FrequencyType.WEEKLY -> 1
-                            FrequencyType.MONTHLY -> 2
-                            FrequencyType.YEARLY -> 3
-                        }
-                binding.spinnerFrequency.setSelection(freqIndex)
-                binding.spinnerFrequency.isEnabled = false
-            }
-            if (initialFrequencyCount != null) {
-                binding.editFrequencyCount.setText(initialFrequencyCount.toString())
-                binding.editFrequencyCount.isEnabled = false
+                checkFrequency(initialFrequency)
+                lockFrequencyControls()
             }
         }
+        updateCountRow()
+        applyColorEverywhere(parseSelectedColor())
 
-        return MaterialAlertDialogBuilder(requireContext()).setView(binding.root).create()
+        // Playful entrance: the identity hero pops in
+        binding.identityHero.scaleX = 0.6f
+        binding.identityHero.scaleY = 0.6f
+        binding.identityHero.alpha = 0f
+        binding.identityHero
+                .animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .alpha(1f)
+                .setDuration(350)
+                .setInterpolator(OvershootInterpolator(1.4f))
+                .start()
     }
+
+    // --- Identity hero: emoji inside the hue ring ---
 
     private fun setupEmojiPicker() {
         binding.selectedEmoji.text = selectedEmoji
+        populateEmojiGrid()
         binding.cardEmojiPicker.setOnClickListener {
-            // Show a simple emoji input dialog
-            val input = EditText(requireContext())
-            input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            input.hint = if (selectedEmoji == "🔥") "🔥" else ""
-            input.setText("") // Do not prefill
-            // Enable emoji support
-            input.imeOptions = EditorInfo.IME_ACTION_DONE
-            MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Pick Emoji")
-                    .setView(input)
-                    .setPositiveButton("OK") { _, _ ->
-                        val emoji = input.text.toString().trim()
-                        when {
-                            emoji.isEmpty() -> {
-                                // Keep the current emoji
-                            }
-                            isSingleEmoji(emoji) -> {
-                                selectedEmoji = emoji
-                                binding.selectedEmoji.text = selectedEmoji
-                            }
-                            else ->
-                                    Toast.makeText(
-                                                    requireContext(),
-                                                    "Please pick a single emoji",
-                                                    Toast.LENGTH_SHORT
-                                            )
-                                            .show()
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+            it.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            toggleEmojiGrid()
         }
     }
 
-    private fun setupFrequencySpinner() {
-        // Create frequency options array
-        val frequencyOptions =
-                arrayOf(
-                        getString(R.string.daily),
-                        getString(R.string.weekly),
-                        getString(R.string.monthly),
-                        getString(R.string.yearly)
-                )
+    private fun toggleEmojiGrid(forceHide: Boolean = false) {
+        val showing = binding.emojiQuickPick.visibility == View.VISIBLE
+        TransitionManager.beginDelayedTransition(
+                binding.root as ViewGroup,
+                AutoTransition().setDuration(220)
+        )
+        binding.emojiQuickPick.visibility = if (showing || forceHide) View.GONE else View.VISIBLE
+    }
 
-        // Create and set adapter
-        val adapter =
-                ArrayAdapter(
-                        requireContext(),
-                        android.R.layout.simple_spinner_item,
-                        frequencyOptions
-                )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerFrequency.adapter = adapter
-
-        // Set up spinner listener to show/hide frequency count input
-        binding.spinnerFrequency.onItemSelectedListener =
-                object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long
-                    ) {
-                        when (position) {
-                            0 -> { // Daily - hide frequency count
-                                binding.inputLayoutCount.visibility = View.GONE
-                                binding.editFrequencyCount.setText("1")
-                            }
-                            1, 2, 3 -> { // Weekly, Monthly, Yearly - show frequency count
-                                binding.inputLayoutCount.visibility = View.VISIBLE
-                                if (binding.editFrequencyCount.text.toString().isEmpty()) {
-                                    binding.editFrequencyCount.setText("1")
-                                }
-                            }
-                        }
+    private fun populateEmojiGrid() {
+        val grid = binding.emojiGrid
+        grid.removeAllViews()
+        binding.btnTypeEmoji.setOnClickListener { showCustomEmojiInput() }
+        QUICK_PICK_EMOJIS.forEach { emoji ->
+            val cell =
+                    TextView(requireContext()).apply {
+                        text = emoji
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
+                        gravity = android.view.Gravity.CENTER
+                        setPadding(0, dpToPx(8), 0, dpToPx(8))
+                        val outValue = TypedValue()
+                        requireContext()
+                                .theme
+                                .resolveAttribute(
+                                        android.R.attr.selectableItemBackgroundBorderless,
+                                        outValue,
+                                        true
+                                )
+                        setBackgroundResource(outValue.resourceId)
+                        layoutParams =
+                                GridLayout.LayoutParams(
+                                                GridLayout.spec(GridLayout.UNDEFINED, 1f),
+                                                GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                                        )
+                                        .apply { width = 0 }
+                        setOnClickListener { selectEmoji(emoji) }
                     }
+            grid.addView(cell)
+        }
+    }
 
-                    override fun onNothingSelected(parent: AdapterView<*>?) {
-                        // Do nothing
+    private fun selectEmoji(emoji: String) {
+        selectedEmoji = emoji
+        binding.selectedEmoji.text = emoji
+        binding.selectedEmoji.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        // Springy pop so the pick feels physical
+        binding.selectedEmoji.scaleX = 0.4f
+        binding.selectedEmoji.scaleY = 0.4f
+        binding.selectedEmoji
+                .animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(300)
+                .setInterpolator(OvershootInterpolator(2.5f))
+                .start()
+        toggleEmojiGrid(forceHide = true)
+    }
+
+    private fun showCustomEmojiInput() {
+        val input = EditText(requireContext())
+        input.inputType =
+                android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        input.hint = selectedEmoji
+        input.imeOptions = EditorInfo.IME_ACTION_DONE
+        MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.type_any_emoji))
+                .setView(input)
+                .setPositiveButton("OK") { _, _ ->
+                    val emoji = input.text.toString().trim()
+                    when {
+                        emoji.isEmpty() -> {
+                            // Keep the current emoji
+                        }
+                        isSingleEmoji(emoji) -> selectEmoji(emoji)
+                        else ->
+                                Toast.makeText(
+                                                requireContext(),
+                                                "Please pick a single emoji",
+                                                Toast.LENGTH_SHORT
+                                        )
+                                        .show()
                     }
                 }
-
-        // Set default selection to Daily
-        binding.spinnerFrequency.setSelection(0)
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
     }
+
+    // --- Frequency ---
+
+    private fun checkFrequency(frequency: FrequencyType) {
+        val buttonId =
+                when (frequency) {
+                    FrequencyType.DAILY -> R.id.btn_freq_daily
+                    FrequencyType.WEEKLY -> R.id.btn_freq_weekly
+                    FrequencyType.MONTHLY -> R.id.btn_freq_monthly
+                    FrequencyType.YEARLY -> R.id.btn_freq_yearly
+                }
+        binding.toggleFrequency.check(buttonId)
+    }
+
+    private fun selectedFrequency(): FrequencyType =
+            when (binding.toggleFrequency.checkedButtonId) {
+                R.id.btn_freq_weekly -> FrequencyType.WEEKLY
+                R.id.btn_freq_monthly -> FrequencyType.MONTHLY
+                R.id.btn_freq_yearly -> FrequencyType.YEARLY
+                else -> FrequencyType.DAILY
+            }
+
+    private fun setupFrequencyToggle() {
+        binding.toggleFrequency.check(R.id.btn_freq_daily)
+        binding.toggleFrequency.addOnButtonCheckedListener { _, _, isChecked ->
+            if (isChecked) updateCountRow()
+        }
+    }
+
+    private fun lockFrequencyControls() {
+        for (i in 0 until binding.toggleFrequency.childCount) {
+            binding.toggleFrequency.getChildAt(i).isEnabled = false
+        }
+        binding.btnCountMinus.isEnabled = false
+        binding.btnCountPlus.isEnabled = false
+    }
+
+    // --- Count stepper ---
+
+    private fun setupCountStepper() {
+        binding.btnCountMinus.setOnClickListener {
+            if (selectedCount > 1) {
+                selectedCount--
+                it.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                updateCountRow(popCount = true)
+            }
+        }
+        binding.btnCountPlus.setOnClickListener {
+            if (selectedCount < 99) {
+                selectedCount++
+                it.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                updateCountRow(popCount = true)
+            }
+        }
+    }
+
+    /** Shows/hides the stepper and keeps the "times per week" label in plain language. */
+    private fun updateCountRow(popCount: Boolean = false) {
+        val frequency = selectedFrequency()
+        TransitionManager.beginDelayedTransition(
+                binding.root as ViewGroup,
+                AutoTransition().setDuration(200)
+        )
+        binding.countStepperRow.visibility =
+                if (frequency == FrequencyType.DAILY) View.GONE else View.VISIBLE
+
+        binding.textCount.text = selectedCount.toString()
+        binding.textCountLabel.text =
+                when (frequency) {
+                    FrequencyType.WEEKLY ->
+                            getString(
+                                    if (selectedCount == 1) R.string.once_per_week
+                                    else R.string.times_per_week
+                            )
+                    FrequencyType.MONTHLY ->
+                            getString(
+                                    if (selectedCount == 1) R.string.once_per_month
+                                    else R.string.times_per_month
+                            )
+                    FrequencyType.YEARLY ->
+                            getString(
+                                    if (selectedCount == 1) R.string.once_per_year
+                                    else R.string.times_per_year
+                            )
+                    FrequencyType.DAILY -> ""
+                }
+        if (popCount) {
+            binding.textCount.scaleX = 0.6f
+            binding.textCount.scaleY = 0.6f
+            binding.textCount
+                    .animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(200)
+                    .setInterpolator(OvershootInterpolator(2f))
+                    .start()
+        }
+    }
+
+    // --- Color ---
+
+    private fun parseSelectedColor(): Int =
+            try {
+                Color.parseColor(selectedColor)
+            } catch (e: Exception) {
+                Color.parseColor("#FF9900")
+            }
 
     private fun setupColorWheel() {
-        val initial =
-                try {
-                    Color.parseColor(selectedColor)
-                } catch (e: Exception) {
-                    Color.parseColor("#FF9900")
-                }
-        binding.hueWheel.setColor(initial)
+        binding.hueWheel.setColor(parseSelectedColor())
         binding.hueWheel.onColorChanged = { color ->
             selectedColor = String.format("#%06X", 0xFFFFFF and color)
+            applyColorEverywhere(color)
         }
     }
 
-    /** Exactly one grapheme cluster, and it has to be an emoji — not letters or digits. */
+    /** Live-tints the emoji circle and the create button so the pick is felt everywhere. */
+    private fun applyColorEverywhere(color: Int) {
+        val circle = GradientDrawable()
+        circle.shape = GradientDrawable.OVAL
+        circle.setColor(ColorUtils.setAlphaComponent(color, 46))
+        circle.setStroke(dpToPx(2), color)
+        binding.cardEmojiPicker.background = circle
+
+        binding.btnCreate.backgroundTintList = ColorStateList.valueOf(color)
+        binding.btnCreate.setTextColor(
+                if (ColorUtils.calculateLuminance(color) > 0.5) Color.BLACK else Color.WHITE
+        )
+
+        val colorList = ColorStateList.valueOf(color)
+        val ripple = ColorStateList.valueOf(ColorUtils.setAlphaComponent(color, 60))
+        listOf(binding.btnCountMinus, binding.btnCountPlus).forEach { button ->
+            button.strokeColor = colorList
+            button.setTextColor(color)
+            button.rippleColor = ripple
+        }
+    }
+
+    /** Exactly one grapheme cluster. Must be an emoji, not a letter or digit. */
     private fun isSingleEmoji(text: String): Boolean {
         if (text.isEmpty()) return false
         val iterator = BreakIterator.getCharacterInstance()
@@ -223,11 +399,10 @@ class AddStreakDialog(
     }
 
     private fun setupClickListeners() {
-        binding.btnCancel.setOnClickListener { dismiss() }
-
+        binding.btnClose.setOnClickListener { dismiss() }
         binding.btnCreate.setOnClickListener { createStreak() }
         // Prevent multi-line input for streak name
-        binding.editStreakName.setOnEditorActionListener { v, actionId, event ->
+        binding.editStreakName.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 v.clearFocus()
                 val imm =
@@ -240,38 +415,47 @@ class AddStreakDialog(
                 false
             }
         }
+        binding.editStreakName.addTextChangedListener(
+                object : android.text.TextWatcher {
+                    override fun beforeTextChanged(
+                            s: CharSequence?,
+                            start: Int,
+                            count: Int,
+                            after: Int
+                    ) {}
+                    override fun onTextChanged(
+                            s: CharSequence?,
+                            start: Int,
+                            before: Int,
+                            count: Int
+                    ) {
+                        binding.inputLayoutName.error = null
+                    }
+                    override fun afterTextChanged(s: android.text.Editable?) {}
+                }
+        )
     }
 
     private fun createStreak() {
         val name = binding.editStreakName.text.toString().trim()
-        val emoji = binding.selectedEmoji.text.toString().trim().ifEmpty { "🔥" }
-        val frequencyPosition = binding.spinnerFrequency.selectedItemPosition
-        val frequencyCount = binding.editFrequencyCount.text.toString().toIntOrNull() ?: 1
 
         if (name.isBlank()) {
             binding.inputLayoutName.error = "Please enter a name"
+            binding.editStreakName.requestFocus()
             return
         }
 
-        if ((frequencyPosition == 1 || frequencyPosition == 2 || frequencyPosition == 3) &&
-                        frequencyCount <= 0
-        ) {
-            binding.inputLayoutCount.error = "Please enter a valid number"
-            return
-        }
-
-        val frequency =
-                when (frequencyPosition) {
-                    0 -> FrequencyType.DAILY
-                    1 -> FrequencyType.WEEKLY
-                    2 -> FrequencyType.MONTHLY
-                    3 -> FrequencyType.YEARLY
-                    else -> FrequencyType.DAILY
-                }
-
-        onStreakAdded(name, emoji, frequency, frequencyCount, selectedColor)
+        onStreakAdded(name, selectedEmoji, selectedFrequency(), selectedCount, selectedColor)
         dismiss()
     }
+
+    private fun dpToPx(dp: Int): Int =
+            TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_DIP,
+                            dp.toFloat(),
+                            resources.displayMetrics
+                    )
+                    .toInt()
 
     override fun onDestroyView() {
         super.onDestroyView()

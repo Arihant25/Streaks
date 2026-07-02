@@ -1,59 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="24dp">
 
-    <!-- Days selection -->
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select Days"
-        android:textStyle="bold"
-        android:textSize="16sp"
+        android:text="@string/remind_me"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <!-- Live summary: updates as days/time change -->
+    <TextView
+        android:id="@+id/text_live_summary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="20dp"
+        android:textColor="@color/orange"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:textColor="?android:textColorPrimary" />
+        android:text="@string/which_days"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:id="@+id/days_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_marginBottom="20dp"
         android:gravity="center_horizontal"
-        android:paddingStart="8dp"
-        android:layout_marginBottom="16dp" />
+        android:orientation="horizontal" />
 
-    <!-- Time selection -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Time"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"
-        android:textColor="?android:textColorPrimary" />
-
-    <TimePicker
-        android:id="@+id/time_picker"
+    <!-- Big tappable time -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:timePickerMode="spinner"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/orange"
+        app:strokeWidth="1dp">
 
-    <!-- Remove reminder button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/text_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8:00 AM"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="44sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tap_to_change_time"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_save_reminder"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:backgroundTint="@color/orange"
+        android:text="@string/save_reminder"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="28dp" />
+
     <TextView
         android:id="@+id/button_remove_reminder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Remove Reminder"
-        android:textColor="@color/orange"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
         android:clickable="true"
         android:focusable="true"
         android:padding="8dp"
+        android:text="@string/remove_reminder"
+        android:textColor="@color/neon_red"
+        android:textSize="15sp"
+        android:textStyle="bold"
         android:visibility="gone" />
-
-</LinearLayout> 
+</LinearLayout>

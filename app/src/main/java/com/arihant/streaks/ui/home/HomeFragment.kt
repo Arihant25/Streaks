@@ -1,16 +1,22 @@
 package com.arihant.streaks.ui.home
 
+import android.animation.ObjectAnimator
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupWindow
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -56,7 +62,18 @@ class HomeFragment : Fragment() {
     // swiped card); null falls back to the top of the screen
     private var pendingBurstOrigin: Position.Absolute? = null
 
+    // Tutorial nudge on the first card hinting it can be swiped; plays at most
+    // once per screen and stops appearing once the user has swiped for real
+    private var swipeHintAnimator: ObjectAnimator? = null
+    private var swipeHintPopup: PopupWindow? = null
+    private var swipeHintPlayed = false
+
     companion object {
+        const val TUTORIAL_PREFS = "streaks_tutorial"
+        private const val PREF_SWIPE_HINT_DONE = "swipe_hint_done"
+        private const val PREF_SWIPE_HINT_SHOWN = "swipe_hint_shown"
+        private const val MAX_SWIPE_HINT_SHOWS = 3
+
         private val MILESTONES =
                 mapOf(
                         7 to "🎉",
@@ -101,6 +118,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun showAddStreakDialog() {
+        val existingCount = settingsViewModel.streaksLiveData.value?.size ?: 0
         AddStreakDialog(
                         onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
                             settingsViewModel.addStreak(
@@ -111,7 +129,8 @@ class HomeFragment : Fragment() {
                                     color
                             )
                         },
-                        isEditMode = false
+                        isEditMode = false,
+                        initialEmoji = AddStreakDialog.defaultEmojiFor(existingCount)
                 )
                 .show(parentFragmentManager, "AddStreakDialog")
     }
@@ -154,7 +173,7 @@ class HomeFragment : Fragment() {
                         object :
                                 ItemTouchHelper.SimpleCallback(
                                         ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-                                        ItemTouchHelper.RIGHT
+                                        ItemTouchHelper.RIGHT or ItemTouchHelper.LEFT
                                 ) {
                             override fun onMove(
                                     recyclerView: RecyclerView,
@@ -178,6 +197,8 @@ class HomeFragment : Fragment() {
                             ) {
                                 val pos = viewHolder.adapterPosition
                                 if (pos == RecyclerView.NO_POSITION) return
+                                // The user knows the gesture now, so retire the tutorial nudge
+                                tutorialPrefs().edit().putBoolean(PREF_SWIPE_HINT_DONE, true).apply()
                                 val streak = streaksAdapter.currentList[pos]
                                 viewHolder.itemView.performHapticFeedback(
                                         HapticFeedbackConstants.CONFIRM
@@ -209,7 +230,7 @@ class HomeFragment : Fragment() {
                                     actionState: Int,
                                     isCurrentlyActive: Boolean
                             ) {
-                                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX > 0) {
+                                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX != 0f) {
                                     val item = viewHolder.itemView
                                     val pos = viewHolder.adapterPosition
                                     val streak =
@@ -224,19 +245,31 @@ class HomeFragment : Fragment() {
                                                     )
                                     val corner = 12f * resources.displayMetrics.density
                                     val reveal =
-                                            RectF(
-                                                    item.left.toFloat(),
-                                                    item.top.toFloat(),
-                                                    item.left + dX,
-                                                    item.bottom.toFloat()
-                                            )
+                                            if (dX > 0) {
+                                                RectF(
+                                                        item.left.toFloat(),
+                                                        item.top.toFloat(),
+                                                        item.left + dX,
+                                                        item.bottom.toFloat()
+                                                )
+                                            } else {
+                                                RectF(
+                                                        item.right + dX,
+                                                        item.top.toFloat(),
+                                                        item.right.toFloat(),
+                                                        item.bottom.toFloat()
+                                                )
+                                            }
                                     c.drawRoundRect(reveal, corner, corner, swipePaint)
 
                                     checkDrawable?.let { icon ->
                                         val iconSize =
                                                 (24 * resources.displayMetrics.density).toInt()
                                         val cy = (item.top + item.bottom) / 2
-                                        val left = item.left + iconSize
+                                        val absDx = Math.abs(dX)
+                                        val left =
+                                                if (dX > 0) item.left + iconSize
+                                                else item.right - iconSize * 2
                                         icon.setBounds(
                                                 left,
                                                 cy - iconSize / 2,
@@ -244,7 +277,7 @@ class HomeFragment : Fragment() {
                                                 cy + iconSize / 2
                                         )
                                         icon.alpha =
-                                                (510 * (dX / item.width))
+                                                (510 * (absDx / item.width))
                                                         .toInt()
                                                         .coerceIn(0, 255)
                                         icon.draw(c)
@@ -266,6 +299,9 @@ class HomeFragment : Fragment() {
                                     actionState: Int
                             ) {
                                 super.onSelectedChanged(viewHolder, actionState)
+                                // Don't fight the user for translationX if the
+                                // hint is mid-flight when they grab a card
+                                if (viewHolder != null) cancelSwipeHint()
                                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                                     viewHolder?.itemView?.performHapticFeedback(
                                             HapticFeedbackConstants.GESTURE_START
@@ -301,7 +337,116 @@ class HomeFragment : Fragment() {
             binding.emptyState.isVisible = streaks.isEmpty()
             binding.recyclerStreaks.isVisible = streaks.isNotEmpty()
             binding.fabAddStreak.isVisible = streaks.isEmpty()
+
+            if (streaks.isNotEmpty()) maybeShowSwipeHint()
         }
+    }
+
+    private fun tutorialPrefs() =
+            requireContext().getSharedPreferences(TUTORIAL_PREFS, Context.MODE_PRIVATE)
+
+    // Partially drag the first card right, bounce back, then left and back
+    // again. A wordless hint that swiping marks a streak done or undone.
+    private fun maybeShowSwipeHint() {
+        if (swipeHintPlayed) return
+        val prefs = tutorialPrefs()
+        if (prefs.getBoolean(PREF_SWIPE_HINT_DONE, false)) return
+        val shown = prefs.getInt(PREF_SWIPE_HINT_SHOWN, 0)
+        if (shown >= MAX_SWIPE_HINT_SHOWS) return
+        swipeHintPlayed = true
+
+        binding.recyclerStreaks.post {
+            val recycler = _binding?.recyclerStreaks ?: return@post
+            val firstCard = recycler.getChildAt(0) ?: return@post
+            prefs.edit().putInt(PREF_SWIPE_HINT_SHOWN, shown + 1).apply()
+
+            showSwipeHintBubble(firstCard)
+
+            val nudge = 56f * resources.displayMetrics.density
+            swipeHintAnimator =
+                    ObjectAnimator.ofFloat(
+                                    firstCard,
+                                    View.TRANSLATION_X,
+                                    0f,
+                                    nudge,
+                                    -nudge * 0.12f, // Slight overshoot past centre = bounce
+                                    0f,
+                                    -nudge,
+                                    nudge * 0.12f,
+                                    0f
+                            )
+                            .apply {
+                                startDelay = 600 // Let the enter transition settle first
+                                duration = 1800
+                                interpolator =
+                                        android.view.animation.AccelerateDecelerateInterpolator()
+                                addListener(
+                                        object : android.animation.AnimatorListenerAdapter() {
+                                            override fun onAnimationEnd(
+                                                    animation: android.animation.Animator
+                                            ) {
+                                                // Also runs after cancel(), so the card
+                                                // never sticks part-way off its slot
+                                                firstCard.translationX = 0f
+                                            }
+                                        }
+                                )
+                                start()
+                            }
+        }
+    }
+
+    // Text bubble shown under the first card while the nudge plays, spelling
+    // out what the gesture does
+    private fun showSwipeHintBubble(anchor: View) {
+        val density = resources.displayMetrics.density
+        val bubble =
+                TextView(requireContext()).apply {
+                    text = getString(R.string.tooltip_swipe_card)
+                    setTextColor(android.graphics.Color.WHITE)
+                    textSize = 13f
+                    setPadding(
+                            (14 * density).toInt(),
+                            (10 * density).toInt(),
+                            (14 * density).toInt(),
+                            (10 * density).toInt()
+                    )
+                    maxWidth = (240 * density).toInt()
+                    background =
+                            GradientDrawable().apply {
+                                cornerRadius = 10 * density
+                                setColor(android.graphics.Color.parseColor("#E6202020"))
+                            }
+                }
+
+        val popup =
+                PopupWindow(
+                        bubble,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+        popup.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+        popup.isOutsideTouchable = true
+        popup.elevation = 4 * density
+        bubble.setOnClickListener { popup.dismiss() }
+
+        // Centre the bubble just below the card so it doesn't cover the nudge
+        bubble.measure(
+                View.MeasureSpec.makeMeasureSpec((260 * density).toInt(), View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val xOff = anchor.width / 2 - bubble.measuredWidth / 2
+        popup.showAsDropDown(anchor, xOff, (4 * density).toInt())
+        swipeHintPopup = popup
+
+        anchor.postDelayed({ if (popup.isShowing) popup.dismiss() }, 6000)
+    }
+
+    private fun cancelSwipeHint() {
+        swipeHintAnimator?.cancel()
+        swipeHintAnimator = null
+        swipeHintPopup?.dismiss()
+        swipeHintPopup = null
     }
 
     // Confetti on every completion, plus a snackbar when a milestone is hit
@@ -318,7 +463,7 @@ class HomeFragment : Fragment() {
             val emoji = MILESTONES[streak.currentStreak] ?: continue
             Snackbar.make(
                             binding.root,
-                            "$emoji ${countLabel(streak)} of ${streak.name} — keep it going!",
+                            "$emoji ${countLabel(streak)} of ${streak.name}! Keep it going!",
                             Snackbar.LENGTH_LONG
                     )
                     .setAction("Share") { shareMilestoneCard(streak) }
@@ -443,6 +588,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        cancelSwipeHint()
         itemTouchHelper?.attachToRecyclerView(null)
         itemTouchHelper = null
         _binding = null

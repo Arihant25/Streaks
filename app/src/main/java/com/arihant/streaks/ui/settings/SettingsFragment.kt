@@ -27,6 +27,10 @@ import com.arihant.streaks.data.StreakExportDto
 import com.arihant.streaks.databinding.FragmentSettingsBinding
 import com.arihant.streaks.ui.dialogs.AddStreakDialog
 import com.arihant.streaks.utils.PermissionHelper
+import com.arihant.streaks.utils.WeekConfig
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 import com.google.android.material.transition.MaterialSharedAxis
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -102,6 +106,7 @@ class SettingsFragment : Fragment() {
         setupNotificationChannelButton()
         setupTestNotificationButton()
         setupThemeSpinner()
+        setupFirstDaySpinner()
         setupExportImportButtons()
         
     
@@ -200,6 +205,38 @@ class SettingsFragment : Fragment() {
                 }
     }
 
+    private fun setupFirstDaySpinner() {
+        WeekConfig.init(requireContext())
+        val days = DayOfWeek.values() // MONDAY..SUNDAY
+        val names = days.map { it.getDisplayName(TextStyle.FULL, Locale.getDefault()) }
+        val adapter =
+                ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerFirstDay.adapter = adapter
+        binding.spinnerFirstDay.setSelection(WeekConfig.firstDayOfWeek.value - 1)
+
+        binding.spinnerFirstDay.onItemSelectedListener =
+                object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(
+                            parent: AdapterView<*>?,
+                            view: View?,
+                            position: Int,
+                            id: Long
+                    ) {
+                        val day = days[position]
+                        // The spinner fires once on layout with the current selection;
+                        // only recalculate streaks on a real change
+                        if (day != WeekConfig.firstDayOfWeek) {
+                            settingsViewModel.setFirstDayOfWeek(day)
+                        }
+                    }
+
+                    override fun onNothingSelected(parent: AdapterView<*>?) {
+                        // Do nothing
+                    }
+                }
+    }
+
     private fun applyTheme(theme: String) {
         when (theme) {
             "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
@@ -223,7 +260,8 @@ class SettingsFragment : Fragment() {
         val settings =
                 mapOf(
                         "theme" to settingsViewModel.theme.value,
-                        "notifications_enabled" to settingsViewModel.notificationsEnabled.value
+                        "notifications_enabled" to settingsViewModel.notificationsEnabled.value,
+                        "first_day_of_week" to WeekConfig.firstDayOfWeek.value
                 )
         val exportObj = mapOf("settings" to settings, "streaks" to streaks)
         val json = Gson().toJson(exportObj)
@@ -288,6 +326,12 @@ class SettingsFragment : Fragment() {
                 settingsViewModel.setNotificationEnabled(notifications)
                 binding.switchEnableNotifications.isChecked = notifications
                 applyTheme(theme)
+                // Gson parses JSON numbers as Double
+                val firstDay = (settings["first_day_of_week"] as? Double)?.toInt()
+                if (firstDay != null && firstDay in 1..7) {
+                    settingsViewModel.setFirstDayOfWeek(DayOfWeek.of(firstDay))
+                    binding.spinnerFirstDay.setSelection(firstDay - 1)
+                }
             }
             // Restore streaks
             settingsViewModel.setStreaksFromImport(streaks)
@@ -329,6 +373,7 @@ class SettingsFragment : Fragment() {
     }
 
     private fun showAddStreakDialog() {
+        val existingCount = settingsViewModel.streaksLiveData.value?.size ?: 0
         val dialog =
                 AddStreakDialog(
                         onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
@@ -340,7 +385,8 @@ class SettingsFragment : Fragment() {
                                     color
                             )
                         },
-                        isEditMode = false
+                        isEditMode = false,
+                        initialEmoji = AddStreakDialog.defaultEmojiFor(existingCount)
                 )
         dialog.show(parentFragmentManager, "AddStreakDialog")
     }

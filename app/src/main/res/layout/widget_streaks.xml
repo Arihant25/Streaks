@@ -1,161 +1,467 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:layout_height="match_parent"
     android:padding="12dp"
-    android:background="@color/widget_background"
-    android:gravity="center_horizontal">
+    android:background="@drawable/widget_background_rounded">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
         android:orientation="horizontal"
         android:gravity="center_horizontal">
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/streak_column_0"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
                 <TextView
                     android:id="@+id/streak_icon_0"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:text="🔥"
-                    android:textSize="32sp"
-                    android:gravity="center"
-                    android:layout_gravity="center" />
-                <TextView
-                    android:id="@+id/streak_count_0"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="12"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
+                    android:text="🏃"
+                    android:textSize="30sp"
                     android:gravity="center" />
-                <TextView
-                    android:id="@+id/streak_unit_0"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="days"
-                    android:textSize="12sp"
-                    android:gravity="center" />
-            </LinearLayout>
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/streak_check_0"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="days"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/streak_column_1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
                 <TextView
                     android:id="@+id/streak_icon_1"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:text="🔥"
-                    android:textSize="32sp"
-                    android:gravity="center"
-                    android:layout_gravity="center" />
-                <TextView
-                    android:id="@+id/streak_count_1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="7"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
+                    android:text="📚"
+                    android:textSize="30sp"
                     android:gravity="center" />
-                <TextView
-                    android:id="@+id/streak_unit_1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="weeks"
-                    android:textSize="12sp"
-                    android:gravity="center" />
-            </LinearLayout>
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/streak_check_1"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="7"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="days"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/streak_column_2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
                 <TextView
                     android:id="@+id/streak_icon_2"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:text="🔥"
-                    android:textSize="32sp"
-                    android:gravity="center"
-                    android:layout_gravity="center" />
-                <TextView
-                    android:id="@+id/streak_count_2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="30"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
+                    android:text="💪"
+                    android:textSize="30sp"
                     android:gravity="center" />
-                <TextView
-                    android:id="@+id/streak_unit_2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="days"
-                    android:textSize="12sp"
-                    android:gravity="center" />
-            </LinearLayout>
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/streak_check_2"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="30"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="days"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/streak_column_3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
                 <TextView
                     android:id="@+id/streak_icon_3"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:text="🔥"
-                    android:textSize="32sp"
-                    android:gravity="center"
-                    android:layout_gravity="center" />
-                <TextView
-                    android:id="@+id/streak_count_3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="3"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
+                    android:text="🧘"
+                    android:textSize="30sp"
                     android:gravity="center" />
+                <ImageView
+                    android:id="@+id/streak_check_3"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="days"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/streak_column_4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:visibility="gone">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
                 <TextView
-                    android:id="@+id/streak_unit_3"
+                    android:id="@+id/streak_icon_4"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="days"
-                    android:textSize="12sp"
+                    android:layout_height="40dp"
+                    android:textSize="30sp"
                     android:gravity="center" />
-            </LinearLayout>
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/streak_check_4"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/streak_column_5"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:visibility="gone">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/streak_icon_5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:textSize="30sp"
+                    android:gravity="center" />
+                <ImageView
+                    android:id="@+id/streak_check_5"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/streak_column_6"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:visibility="gone">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/streak_icon_6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:textSize="30sp"
+                    android:gravity="center" />
+                <ImageView
+                    android:id="@+id/streak_check_6"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_6"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/streak_column_7"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:visibility="gone">
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/streak_icon_7"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:textSize="30sp"
+                    android:gravity="center" />
+                <ImageView
+                    android:id="@+id/streak_check_7"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:src="@drawable/ic_widget_check"
+                    android:visibility="gone"
+                    android:contentDescription="@string/mark_completed" />
+            </FrameLayout>
+            <TextView
+                android:id="@+id/streak_count_7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_unit_7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/gray_dark"
+                android:gravity="center" />
+            <TextView
+                android:id="@+id/streak_name_7"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:visibility="gone" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout> 
+
+    <TextView
+        android:id="@+id/widget_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/widget_no_streaks"
+        android:textSize="13sp"
+        android:textColor="@color/gray_dark"
+        android:gravity="center"
+        android:visibility="gone" />
+</FrameLayout>

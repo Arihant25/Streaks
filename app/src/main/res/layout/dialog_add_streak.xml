@@ -1,162 +1,287 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
-
-    <!-- Dialog Title -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/create_streak"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Emoji Selection -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card_emoji_picker"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="2dp"
-        android:clickable="true"
-        android:focusable="true">
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:padding="12dp">
-            <TextView
-                android:id="@+id/selected_emoji"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔥"
-                android:textSize="36sp"
-                android:layout_gravity="center_horizontal" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/select_emoji"
-                android:textSize="12sp"
-                android:textColor="@color/gray_dark"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Color Selection Grid -->
-    <TextView
-        android:id="@+id/text_select_color"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Color"
-        android:textSize="14sp"
-        android:textColor="@color/gray_dark"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="4dp" />
-
-    <com.arihant.streaks.ui.views.HueWheelView
-        android:id="@+id/hue_wheel"
-        android:layout_width="170dp"
-        android:layout_height="170dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Streak Name -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/input_layout_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:boxStrokeColor="@color/orange"
-        app:hintTextColor="@color/orange">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edit_streak_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/streak_name"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:inputType="textCapSentences|textNoSuggestions"
-            android:imeOptions="actionDone" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Frequency Selection -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/frequency"
-        android:textSize="14sp"
-        android:textColor="@color/gray_dark"
-        android:layout_marginBottom="8dp" />
-
-    <Spinner
-        android:id="@+id/spinner_frequency"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Frequency Count (make these gone by default) -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/input_layout_count"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        app:boxStrokeColor="@color/orange"
-        app:hintTextColor="@color/orange"
-        android:visibility="gone">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edit_frequency_count"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/how_many_times"
-            android:inputType="number"
-            android:maxLines="1"
-            android:singleLine="true" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end">
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="24dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_cancel"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
+        <com.google.android.material.bottomsheet.BottomSheetDragHandleView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/cancel"
-            android:textColor="@color/gray_dark"
-            android:layout_marginEnd="8dp" />
+            android:layout_gravity="center_horizontal" />
 
+        <!-- Title row -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:id="@+id/sheet_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|center_vertical"
+                android:text="@string/create_streak"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btn_close"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="end|center_vertical"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/close"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </FrameLayout>
+
+        <!-- Identity hero: emoji lives inside the hue ring -->
+        <FrameLayout
+            android:id="@+id/identity_hero"
+            android:layout_width="210dp"
+            android:layout_height="210dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp">
+
+            <com.arihant.streaks.ui.views.HueWheelView
+                android:id="@+id/hue_wheel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <FrameLayout
+                android:id="@+id/card_emoji_picker"
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_emoji_circle"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/select_emoji">
+
+                <TextView
+                    android:id="@+id/selected_emoji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="🔥"
+                    android:textSize="44sp" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/text_identity_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/identity_hint"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp" />
+
+        <!-- Inline emoji quick-pick (revealed by tapping the emoji) -->
+        <LinearLayout
+            android:id="@+id/emoji_quick_pick"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <GridLayout
+                android:id="@+id/emoji_grid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="5" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_type_emoji"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="@string/type_any_emoji"
+                android:textColor="@color/orange" />
+        </LinearLayout>
+
+        <!-- Streak name -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_name"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:hint="@string/streak_name"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxStrokeColor="@color/orange"
+            app:hintTextColor="@color/orange">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_streak_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="textCapSentences|textNoSuggestions"
+                android:maxLines="1"
+                android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Frequency -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/how_often"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggle_frequency"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_freq_daily"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="@string/daily"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_freq_weekly"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="@string/weekly"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_freq_monthly"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="@string/monthly"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_freq_yearly"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="@string/yearly"
+                android:textSize="12sp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Count stepper: hidden for Daily -->
+        <LinearLayout
+            android:id="@+id/count_stepper_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_count_minus"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="@string/decrease"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:padding="0dp"
+                android:text="−"
+                android:textSize="20sp"
+                app:cornerRadius="22dp" />
+
+            <TextView
+                android:id="@+id/text_count"
+                android:layout_width="56dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="1"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_count_plus"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="@string/increase"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:padding="0dp"
+                android:text="+"
+                android:textSize="20sp"
+                app:cornerRadius="22dp" />
+
+            <TextView
+                android:id="@+id/text_count_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/times_per_week"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- Primary action: live-tinted with the picked hue -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_create"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/create_streak"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
             android:backgroundTint="@color/orange"
-            app:cornerRadius="8dp" />
-
+            android:text="@string/create_streak"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="28dp" />
     </LinearLayout>
-
-</LinearLayout>
-
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

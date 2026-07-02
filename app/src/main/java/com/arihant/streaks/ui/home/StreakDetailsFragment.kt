@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.TimePicker
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -39,6 +38,11 @@ class StreakDetailsFragment : Fragment() {
         
         // Track the currently displayed month for calendar navigation
         private var currentDisplayMonth: java.time.LocalDate = java.time.LocalDate.now().withDayOfMonth(1)
+
+        // First-run tooltip pointing at today's cell in the monthly calendar
+        private var todayCellView: View? = null
+        private var calendarTooltip: android.widget.PopupWindow? = null
+        private var calendarTooltipQueued = false
 
         // References to the dynamically built stat views so they can be updated in place
         private var currentStreakNumberView: TextView? = null
@@ -93,6 +97,7 @@ class StreakDetailsFragment : Fragment() {
 
                 // --- Monthly view ---
                 setupMonthlyViewWithNavigation(binding, streak)
+                maybeShowCalendarTooltip(binding.root)
 
                 // --- Reminder section ---
                 this.reminder = streak.reminder
@@ -173,6 +178,9 @@ class StreakDetailsFragment : Fragment() {
 
         override fun onDestroyView() {
                 super.onDestroyView()
+                calendarTooltip?.dismiss()
+                calendarTooltip = null
+                todayCellView = null
                 currentStreakNumberView = null
                 currentStreakUnitView = null
                 bestStreakNumberView = null
@@ -617,9 +625,9 @@ class StreakDetailsFragment : Fragment() {
                 val colorCompleted = streakColor
 
                 // GitHub-style: organize by weeks (columns) and days of week (rows)
-                // Start from the first Sunday of the year (or before if needed)
+                // Start from the first configured week-start day of the year (or before if needed)
                 var weekStartDate = startDate
-                while (weekStartDate.dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                while (weekStartDate.dayOfWeek != com.arihant.streaks.utils.WeekConfig.firstDayOfWeek) {
                     weekStartDate = weekStartDate.minusDays(1)
                 }
                 
@@ -681,6 +689,10 @@ class StreakDetailsFragment : Fragment() {
         }
 
         private fun refreshMonthlyView(binding: FragmentStreakDetailsBinding, streak: com.arihant.streaks.data.Streak) {
+                // The calendar is rebuilt from scratch, so drop any tooltip
+                // anchored to a cell that is about to be detached
+                calendarTooltip?.dismiss()
+                todayCellView = null
                 val monthlyView = createMonthlyViewWithNavigation(binding, streak, currentDisplayMonth)
                 binding.monthlyViewContainer.removeAllViews()
                 binding.monthlyViewContainer.addView(monthlyView)
@@ -699,16 +711,10 @@ class StreakDetailsFragment : Fragment() {
                         }
 
                 val firstOfMonth = displayDate.withDayOfMonth(1)
+                // Offset of the 1st of the month within the configured week
+                val weekStart = com.arihant.streaks.utils.WeekConfig.firstDayOfWeek
                 val firstDayOfWeek =
-                        when (firstOfMonth.dayOfWeek) {
-                                java.time.DayOfWeek.SUNDAY -> 0
-                                java.time.DayOfWeek.MONDAY -> 1
-                                java.time.DayOfWeek.TUESDAY -> 2
-                                java.time.DayOfWeek.WEDNESDAY -> 3
-                                java.time.DayOfWeek.THURSDAY -> 4
-                                java.time.DayOfWeek.FRIDAY -> 5
-                                java.time.DayOfWeek.SATURDAY -> 6
-                        }
+                        (firstOfMonth.dayOfWeek.value - weekStart.value + 7) % 7
 
                 val monthName =
                         displayDate.month.name.lowercase().replaceFirstChar { it.uppercase() } +
@@ -820,8 +826,16 @@ class StreakDetailsFragment : Fragment() {
                 )
                 container.addView(spacer)
 
-                // Days of week header (Sunday first)
-                val daysOfWeek = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                // Days of week header, starting on the configured first day
+                val daysOfWeek =
+                        (0L..6L).map { offset ->
+                                com.arihant.streaks.utils.WeekConfig.firstDayOfWeek
+                                        .plus(offset)
+                                        .getDisplayName(
+                                                java.time.format.TextStyle.SHORT,
+                                                java.util.Locale.getDefault()
+                                        )
+                        }
                 val weekHeaderRow = android.widget.LinearLayout(context)
                 weekHeaderRow.orientation = android.widget.LinearLayout.HORIZONTAL
                 weekHeaderRow.layoutParams =
@@ -974,6 +988,8 @@ class StreakDetailsFragment : Fragment() {
                                         dayTv.isClickable = true
                                         dayTv.isFocusable = true
 
+                                        if (isToday) todayCellView = dayTv
+
                                         cell.addView(dayTv)
                                         dayNum++
                                 }
@@ -984,6 +1000,72 @@ class StreakDetailsFragment : Fragment() {
 
                 container.addView(calendarGrid)
                 return container
+        }
+
+        // Show a "tap any date" tooltip over today's cell on the first two
+        // visits to this page after install, once the enter transition lands
+        private fun maybeShowCalendarTooltip(root: View) {
+                if (calendarTooltipQueued) return
+                val prefs =
+                        requireContext()
+                                .getSharedPreferences(
+                                        HomeFragment.TUTORIAL_PREFS,
+                                        Context.MODE_PRIVATE
+                                )
+                val shown = prefs.getInt(PREF_CALENDAR_TOOLTIP_SHOWN, 0)
+                if (shown >= 2) return
+                calendarTooltipQueued = true
+
+                root.postDelayed(
+                        {
+                                val anchor = todayCellView ?: return@postDelayed
+                                if (!isAdded || !anchor.isAttachedToWindow) return@postDelayed
+                                prefs.edit().putInt(PREF_CALENDAR_TOOLTIP_SHOWN, shown + 1).apply()
+                                showCalendarTooltip(anchor)
+                        },
+                        700 // Container transform runs 400ms; land after it settles
+                )
+        }
+
+        private fun showCalendarTooltip(anchor: View) {
+                val bubble =
+                        TextView(requireContext()).apply {
+                                text = getString(R.string.tooltip_tap_date)
+                                setTextColor(Color.WHITE)
+                                textSize = 13f
+                                setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
+                                maxWidth = dpToPx(220)
+                                background =
+                                        GradientDrawable().apply {
+                                                cornerRadius = dpToPx(10).toFloat()
+                                                setColor(Color.parseColor("#E6202020"))
+                                        }
+                        }
+
+                val popup =
+                        android.widget.PopupWindow(
+                                bubble,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
+                popup.setBackgroundDrawable(
+                        android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+                )
+                popup.isOutsideTouchable = true
+                popup.elevation = dpToPx(4).toFloat()
+                bubble.setOnClickListener { popup.dismiss() }
+
+                // Measure so the bubble can sit centred above today's cell
+                bubble.measure(
+                        View.MeasureSpec.makeMeasureSpec(dpToPx(240), View.MeasureSpec.AT_MOST),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                val xOff = anchor.width / 2 - bubble.measuredWidth / 2
+                val yOff = -(anchor.height + bubble.measuredHeight + dpToPx(8))
+                popup.showAsDropDown(anchor, xOff, yOff)
+                calendarTooltip = popup
+
+                anchor.postDelayed({ if (popup.isShowing) popup.dismiss() }, 6000)
         }
 
         private fun showDateToggleConfirmation(
@@ -1044,56 +1126,56 @@ class StreakDetailsFragment : Fragment() {
                         reminder?.let { java.time.LocalTime.parse(it.time) }
                                 ?: java.time.LocalTime.of(8, 0)
                 val daysOfWeek = arrayOf("M", "T", "W", "T", "F", "S", "S")
-                val checkedDays = BooleanArray(7) { false }
-
-                // Pre-check days if reminder exists
+                // A new reminder starts with every day on — clearer than the old
+                // hidden "no days selected means every day" rule
+                val checkedDays = BooleanArray(7) { reminder == null }
                 reminder?.days?.forEach { day -> checkedDays[day] = true }
 
                 val dialogView = layoutInflater.inflate(R.layout.dialog_reminder, null)
                 val daysContainer = dialogView.findViewById<LinearLayout>(R.id.days_container)
-                val timePicker = dialogView.findViewById<TimePicker>(R.id.time_picker)
+                val timeText = dialogView.findViewById<TextView>(R.id.text_time)
+                val liveSummary = dialogView.findViewById<TextView>(R.id.text_live_summary)
+                val timeCard = dialogView.findViewById<View>(R.id.card_time)
+                val saveButton = dialogView.findViewById<View>(R.id.btn_save_reminder)
                 val removeButton = dialogView.findViewById<TextView>(R.id.button_remove_reminder)
 
-                // Set initial time
-                timePicker.hour = selectedTime.hour
-                timePicker.minute = selectedTime.minute
+                val timeFormatter = java.time.format.DateTimeFormatter.ofPattern("h:mm a")
+                fun refreshSummary() {
+                        timeText.text = selectedTime.format(timeFormatter)
+                        val days = (0..6).filter { checkedDays[it] }.ifEmpty { (0..6).toList() }
+                        liveSummary.text = Reminder(selectedTime.toString(), days).toSummary()
+                }
 
-                // Create day circles
+                // Day circles with a springy toggle
                 daysOfWeek.forEachIndexed { index, day ->
                         val dayButton =
                                 TextView(requireContext()).apply {
                                         text = day
                                         textSize = 14f
-                                        setTextColor(
-                                                resolveThemeColor(
-                                                        requireContext(),
-                                                        com.google
-                                                                .android
-                                                                .material
-                                                                .R
-                                                                .attr
-                                                                .colorOnSurface
-                                                )
-                                        )
                                         background =
                                                 ContextCompat.getDrawable(
                                                         requireContext(),
                                                         R.drawable.day_circle_background
                                                 )
-                                        isSelected = checkedDays[index]
-                                        if (isSelected) {
+
+                                        fun applyTextColor() {
                                                 setTextColor(
                                                         resolveThemeColor(
                                                                 requireContext(),
-                                                                com.google
-                                                                        .android
-                                                                        .material
-                                                                        .R
-                                                                        .attr
-                                                                        .colorOnPrimary
+                                                                if (isSelected) {
+                                                                        com.google.android.material
+                                                                                .R.attr
+                                                                                .colorOnPrimary
+                                                                } else {
+                                                                        com.google.android.material
+                                                                                .R.attr
+                                                                                .colorOnSurface
+                                                                }
                                                         )
                                                 )
                                         }
+                                        isSelected = checkedDays[index]
+                                        applyTextColor()
 
                                         // Set fixed size for the circle
                                         val size =
@@ -1113,88 +1195,89 @@ class StreakDetailsFragment : Fragment() {
 
                                         setOnClickListener {
                                                 isSelected = !isSelected
-                                                setTextColor(
-                                                        if (isSelected) {
-                                                                resolveThemeColor(
-                                                                        requireContext(),
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorOnPrimary
-                                                                )
-                                                        } else {
-                                                                resolveThemeColor(
-                                                                        requireContext(),
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorOnSurface
-                                                                )
-                                                        }
-                                                )
                                                 checkedDays[index] = isSelected
+                                                applyTextColor()
+                                                performHapticFeedback(
+                                                        android.view.HapticFeedbackConstants
+                                                                .CLOCK_TICK
+                                                )
+                                                scaleX = 0.7f
+                                                scaleY = 0.7f
+                                                animate().scaleX(1f)
+                                                        .scaleY(1f)
+                                                        .setDuration(220)
+                                                        .setInterpolator(
+                                                                android.view.animation
+                                                                        .OvershootInterpolator(2.5f)
+                                                        )
+                                                        .start()
+                                                refreshSummary()
                                         }
                                 }
                         daysContainer.addView(dayButton)
                 }
 
-                // Show/hide remove button based on whether reminder exists
-                removeButton.visibility = if (reminder != null) View.VISIBLE else View.GONE
+                refreshSummary()
 
                 val dialog =
-                        MaterialAlertDialogBuilder(requireContext())
-                                .setTitle("Set Reminder")
-                                .setView(dialogView)
-                                .setPositiveButton("Save") { _, _ ->
-                                        val selectedDays = mutableListOf<Int>()
-                                        checkedDays.forEachIndexed { index, checked ->
-                                                if (checked) selectedDays.add(index)
-                                        }
+                        com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
+                dialog.setContentView(dialogView)
 
-                                        selectedTime =
-                                                java.time.LocalTime.of(
-                                                        timePicker.hour,
-                                                        timePicker.minute
-                                                )
-
-                                        // If no days selected, treat as every day selected
-                                        val reminder =
-                                                if (selectedDays.isEmpty()) {
-                                                        Reminder(
-                                                                selectedTime.toString(),
-                                                                (0..6).toList()
-                                                        )
+                // Big time opens Material's clock picker
+                timeCard.setOnClickListener {
+                        val is24Hour =
+                                android.text.format.DateFormat.is24HourFormat(requireContext())
+                        val picker =
+                                com.google.android.material.timepicker.MaterialTimePicker.Builder()
+                                        .setTimeFormat(
+                                                if (is24Hour) {
+                                                        com.google.android.material.timepicker
+                                                                .TimeFormat.CLOCK_24H
                                                 } else {
-                                                        Reminder(
-                                                                selectedTime.toString(),
-                                                                selectedDays
-                                                        )
+                                                        com.google.android.material.timepicker
+                                                                .TimeFormat.CLOCK_12H
                                                 }
+                                        )
+                                        .setHour(selectedTime.hour)
+                                        .setMinute(selectedTime.minute)
+                                        .setTitleText(getString(R.string.remind_me))
+                                        .build()
+                        picker.addOnPositiveButtonClickListener {
+                                selectedTime = java.time.LocalTime.of(picker.hour, picker.minute)
+                                refreshSummary()
+                        }
+                        picker.show(childFragmentManager, "reminder_time_picker")
+                }
 
-                                        val updatedStreak =
-                                                homeViewModel.setStreakReminder(
-                                                        args.streak.id,
-                                                        reminder,
-                                                        requireContext()
-                                                )
-                                        this.reminder = updatedStreak?.reminder
-                                        updateReminderSummary(binding)
-                                        updatedStreak?.reminder?.let {
-                                                notificationScheduler.scheduleReminder(
-                                                        args.streak.id,
-                                                        args.streak.name,
-                                                        it
-                                                )
-                                        }
-                                }
-                                .setNegativeButton("Cancel", null)
-                                .create()
+                saveButton.setOnClickListener {
+                        val selectedDays = (0..6).filter { checkedDays[it] }
+                        // If no days selected, treat as every day selected
+                        val newReminder =
+                                Reminder(
+                                        selectedTime.toString(),
+                                        selectedDays.ifEmpty { (0..6).toList() }
+                                )
 
-                // Set up remove button
+                        val updatedStreak =
+                                homeViewModel.setStreakReminder(
+                                        args.streak.id,
+                                        newReminder,
+                                        requireContext()
+                                )
+                        this.reminder = updatedStreak?.reminder
+                        updateReminderSummary(binding)
+                        updatedStreak?.reminder?.let {
+                                notificationScheduler.scheduleReminder(
+                                        args.streak.id,
+                                        args.streak.name,
+                                        it
+                                )
+                        }
+                        dialog.dismiss()
+                }
+
+                // Show/hide remove button based on whether reminder exists
+                removeButton.visibility = if (reminder != null) View.VISIBLE else View.GONE
                 removeButton.setOnClickListener {
                         homeViewModel.removeStreakReminder(args.streak.id, requireContext())
                         this.reminder = null
@@ -1259,6 +1342,7 @@ class StreakDetailsFragment : Fragment() {
 
         companion object {
                 const val ARG_STREAK = "streak"
+                private const val PREF_CALENDAR_TOOLTIP_SHOWN = "calendar_tooltip_shown"
 
                 fun scheduleReminderAlarm(
                         context: Context,

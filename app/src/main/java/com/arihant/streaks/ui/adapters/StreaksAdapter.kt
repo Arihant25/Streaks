@@ -12,9 +12,8 @@ import com.arihant.streaks.R
 import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.databinding.ItemStreakCardBinding
+import com.arihant.streaks.utils.WeekConfig
 import java.time.LocalDate
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 class StreaksAdapter(
         private val onStreakToggled: (String, Boolean, View) -> Unit,
@@ -236,8 +235,7 @@ class StreaksAdapter(
                                 when (streak.frequency) {
                                         FrequencyType.DAILY -> 1
                                         FrequencyType.WEEKLY -> {
-                                                val weekFields = WeekFields.of(Locale.getDefault())
-                                                8 - today.get(weekFields.dayOfWeek())
+                                                8 - today.get(WeekConfig.weekFields().dayOfWeek())
                                         }
                                         FrequencyType.MONTHLY ->
                                                 today.lengthOfMonth() - today.dayOfMonth + 1
@@ -259,7 +257,7 @@ class StreaksAdapter(
                         return when (frequency) {
                                 FrequencyType.DAILY -> date == other
                                 FrequencyType.WEEKLY -> {
-                                        val weekFields = WeekFields.of(Locale.getDefault())
+                                        val weekFields = WeekConfig.weekFields()
                                         date.with(weekFields.dayOfWeek(), 1) ==
                                                 other.with(weekFields.dayOfWeek(), 1)
                                 }
