@@ -40,6 +40,12 @@ class StreakDetailsFragment : Fragment() {
         // Track the currently displayed month for calendar navigation
         private var currentDisplayMonth: java.time.LocalDate = java.time.LocalDate.now().withDayOfMonth(1)
 
+        // References to the dynamically built stat views so they can be updated in place
+        private var currentStreakNumberView: TextView? = null
+        private var currentStreakUnitView: TextView? = null
+        private var bestStreakNumberView: TextView? = null
+        private var bestStreakUnitView: TextView? = null
+
         override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
                 // Predictive back: Material motion for enter/return
@@ -140,7 +146,25 @@ class StreakDetailsFragment : Fragment() {
                 // Set transitionName for shared element
                 binding.root.transitionName = "streak_card_${streak.id}"
 
+                // Keep this page in sync with the repository so marking a date
+                // updates the stats, year graph and calendar immediately
+                homeViewModel.streaks.observe(viewLifecycleOwner) { streaks ->
+                        val updated = streaks.find { it.id == streak.id } ?: return@observe
+                        updateStreakStats(updated)
+                        binding.yearGraphContainer.removeAllViews()
+                        binding.yearGraphContainer.addView(createYearGraphView(updated))
+                        refreshMonthlyView(binding, updated)
+                }
+
                 return binding.root
+        }
+
+        override fun onDestroyView() {
+                super.onDestroyView()
+                currentStreakNumberView = null
+                currentStreakUnitView = null
+                bestStreakNumberView = null
+                bestStreakUnitView = null
         }
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -244,6 +268,8 @@ class StreakDetailsFragment : Fragment() {
                         }
                 currentStreakNumberLayout.addView(currentStreakNumber)
                 currentStreakNumberLayout.addView(currentStreakUnitText)
+                currentStreakNumberView = currentStreakNumber
+                currentStreakUnitView = currentStreakUnitText
 
                 val currentStreakLabel =
                         android.widget.TextView(requireContext()).apply {
@@ -339,6 +365,8 @@ class StreakDetailsFragment : Fragment() {
                         }
                 bestStreakNumberLayout.addView(bestStreakNumber)
                 bestStreakNumberLayout.addView(bestStreakUnitText)
+                bestStreakNumberView = bestStreakNumber
+                bestStreakUnitView = bestStreakUnitText
 
                 val bestStreakLabel =
                         android.widget.TextView(requireContext()).apply {
@@ -375,6 +403,13 @@ class StreakDetailsFragment : Fragment() {
                 // Remove old layout and add new one
                 grandParent.removeView(parentContainer)
                 grandParent.addView(streakStatsContainer, parentIndex)
+        }
+
+        private fun updateStreakStats(streak: Streak) {
+                currentStreakNumberView?.text = "${streak.currentStreak}"
+                currentStreakUnitView?.text = getStreakUnit(streak.frequency, streak.currentStreak)
+                bestStreakNumberView?.text = "${streak.bestStreak}"
+                bestStreakUnitView?.text = getStreakUnit(streak.frequency, streak.bestStreak)
         }
 
         private fun getStreakUnit(
@@ -842,6 +877,11 @@ class StreakDetailsFragment : Fragment() {
             streak: com.arihant.streaks.data.Streak,
             binding: FragmentStreakDetailsBinding
         ) {
+            if (date.isAfter(java.time.LocalDate.now())) {
+                Toast.makeText(requireContext(), "Can't mark future dates", Toast.LENGTH_SHORT)
+                        .show()
+                return
+            }
             val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy"))
             val title = if (isCurrentlyCompleted) getString(R.string.mark_uncompleted) else getString(R.string.mark_completed)
             val message = if (isCurrentlyCompleted) {
@@ -866,16 +906,8 @@ class StreakDetailsFragment : Fragment() {
             streak: com.arihant.streaks.data.Streak,
             binding: FragmentStreakDetailsBinding
         ) {
-            // Toggle the completion status
+            // Toggle the completion status; the streaks observer refreshes the UI
             homeViewModel.toggleStreakCompletion(streak.id, date, requireContext())
-            
-            // Refresh the view after a short delay to ensure repository has been updated
-            binding.root.postDelayed({
-                // Find the updated streak from the current streaks LiveData
-                homeViewModel.streaks.value?.find { it.id == streak.id }?.let { updatedStreak ->
-                    refreshMonthlyView(binding, updatedStreak)
-                }
-            }, 50)
         }
 
         private fun dpToPx(dp: Int): Int {

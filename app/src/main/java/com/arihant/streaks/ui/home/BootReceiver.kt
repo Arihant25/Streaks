@@ -11,6 +11,8 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             // Re-schedule all reminders using WorkManager
             val repository = StreakRepository.getInstance()
+            // Fresh process after boot: the repository is empty until loaded from disk
+            repository.loadStreaksFromFile(context)
             val scheduler = NotificationScheduler(context)
             val streaks = repository.streaks.value ?: emptyList()
 

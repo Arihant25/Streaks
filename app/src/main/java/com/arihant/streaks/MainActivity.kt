@@ -3,11 +3,14 @@ package com.arihant.streaks
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.arihant.streaks.databinding.ActivityMainBinding
 import com.arihant.streaks.ui.settings.SettingsViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,6 +25,21 @@ class MainActivity : AppCompatActivity() {
 
         // Load streaks from persistent storage
         settingsViewModel.loadStreaksFromFile()
+
+        // Apply the saved theme on launch (previously only applied when opening Settings)
+        lifecycleScope.launch {
+            settingsViewModel.theme.collect { theme ->
+                val mode =
+                        when (theme) {
+                            "light" -> AppCompatDelegate.MODE_NIGHT_NO
+                            "dark" -> AppCompatDelegate.MODE_NIGHT_YES
+                            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                        }
+                if (AppCompatDelegate.getDefaultNightMode() != mode) {
+                    AppCompatDelegate.setDefaultNightMode(mode)
+                }
+            }
+        }
 
         val navView: BottomNavigationView = binding.navView
 

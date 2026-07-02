@@ -53,7 +53,9 @@ class StreakRepository {
                                     position = dto.position ?: exportList.indexOf(dto)
                             )
                         }
-                _streaks.value = streaks
+                // Recalculate so streaks broken since the last launch don't show stale counts
+                _streaks.value =
+                        streaks.map { recalculateStreakFromCompletions(it, it.completions) }
             }
         } catch (e: Exception) {
             // Optionally log error
@@ -208,7 +210,7 @@ class StreakRepository {
             return streak.copy(
                 lastCompletedDate = null,
                 currentStreak = 0,
-                bestStreak = maxOf(streak.bestStreak, 0),
+                bestStreak = 0,
                 isCompletedToday = false,
                 completions = completions
             )
@@ -242,7 +244,7 @@ class StreakRepository {
             return streak.copy(
                 lastCompletedDate = completionDates.lastOrNull()?.format(formatter),
                 currentStreak = 0,
-                bestStreak = maxOf(streak.bestStreak, 0),
+                bestStreak = 0,
                 isCompletedToday = completions.contains(todayStr),
                 completions = completions
             )
@@ -319,10 +321,12 @@ class StreakRepository {
             currentStreak = 0
         }
         
+        // Best streak is derived purely from completion history so removing
+        // an erroneous completion also corrects the best streak
         return streak.copy(
             lastCompletedDate = completionDates.lastOrNull()?.format(formatter),
             currentStreak = currentStreak,
-            bestStreak = maxOf(streak.bestStreak, bestStreak),
+            bestStreak = bestStreak,
             isCompletedToday = completions.contains(todayStr),
             completions = completions
         )
@@ -417,7 +421,7 @@ class StreakRepository {
     }
 
     fun setStreaksFromImport(streaks: List<Streak>, context: Context? = null) {
-        _streaks.value = streaks
+        _streaks.value = streaks.map { recalculateStreakFromCompletions(it, it.completions) }
         context?.let {
             saveStreaksToFile(it)
             updateWidget(it)

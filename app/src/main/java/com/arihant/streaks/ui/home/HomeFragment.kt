@@ -86,6 +86,11 @@ class HomeFragment : Fragment() {
                             ): Boolean {
                                 val fromPos = viewHolder.adapterPosition
                                 val toPos = target.adapterPosition
+                                if (fromPos == RecyclerView.NO_POSITION ||
+                                                toPos == RecyclerView.NO_POSITION
+                                ) {
+                                        return false
+                                }
                                 streaksAdapter.moveItem(fromPos, toPos)
                                 return true
                             }
@@ -119,6 +124,13 @@ class HomeFragment : Fragment() {
             binding.emptyState.isVisible = streaks.isEmpty()
             binding.recyclerStreaks.isVisible = streaks.isNotEmpty()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Recompute streaks so ones broken while the app sat in memory
+        // (e.g. overnight) update without needing a completion to be marked
+        homeViewModel.recalculateAllStreaks(requireContext())
     }
 
     override fun onDestroyView() {

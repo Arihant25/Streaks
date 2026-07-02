@@ -187,7 +187,11 @@ class SettingsFragment : Fragment() {
                                     2 -> "dark"
                                     else -> "system"
                                 }
-                        settingsViewModel.setTheme(theme)
+                        // The spinner fires once on layout with the default position;
+                        // only persist real changes so the saved theme isn't overwritten
+                        if (theme != settingsViewModel.theme.value) {
+                            settingsViewModel.setTheme(theme)
+                        }
                     }
 
                     override fun onNothingSelected(parent: AdapterView<*>?) {
