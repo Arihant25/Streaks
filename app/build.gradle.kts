@@ -1,8 +1,14 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-parcelize")
     id("androidx.navigation.safeargs.kotlin")
+}
+
+val localProps = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 
 android {
@@ -17,8 +23,18 @@ android {
         versionName = "2.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(localProps["KEYSTORE_PATH"] as? String ?: "../my-release-key.jks")
+            storePassword = localProps["KEYSTORE_PASSWORD"] as? String
+            keyAlias = localProps["KEY_ALIAS"] as? String
+            keyPassword = localProps["KEY_PASSWORD"] as? String
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                     getDefaultProguardFile("proguard-android-optimize.txt"),
