@@ -4,40 +4,510 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Streaks App</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Streaks — The minimal habit tracker for Android</title>
+    <meta name="description"
+        content="Streaks is a free, minimal habit tracker for Android. One tap a day, colorful streaks for anything, home screen widgets, and a year graph you'll want to keep full. Offline, no account, no ads.">
+    <link rel="canonical" href="https://arihant25.github.io/Streaks/">
+    <meta name="theme-color" content="#F6F6F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="assets/icon.webp" type="image/webp">
+    <link rel="apple-touch-icon" href="assets/icon-512.png">
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Streaks">
+    <meta property="og:title" content="Streaks — The minimal habit tracker for Android">
+    <meta property="og:description"
+        content="One tap a day, colorful streaks for anything, home screen widgets, and a year graph you'll want to keep full. Free, offline, no ads.">
+    <meta property="og:url" content="https://arihant25.github.io/Streaks/">
+    <meta property="og:image" content="https://arihant25.github.io/Streaks/assets/og-card.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Streaks — The minimal habit tracker for Android">
+    <meta name="twitter:description"
+        content="One tap a day, colorful streaks for anything, home screen widgets, and a year graph you'll want to keep full. Free, offline, no ads.">
+    <meta name="twitter:image" content="https://arihant25.github.io/Streaks/assets/og-card.png">
+
+    <link rel="preload" href="assets/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="assets/01-home-light.png" as="image">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "MobileApplication",
+        "name": "Streaks",
+        "operatingSystem": "ANDROID",
+        "applicationCategory": "LifestyleApplication",
+        "description": "A free, minimal habit tracker for Android. Track daily, weekly, monthly, or yearly habits, check them off from home screen widgets, and watch your year graph fill up.",
+        "image": "https://arihant25.github.io/Streaks/assets/icon-512.png",
+        "url": "https://arihant25.github.io/Streaks/",
+        "installUrl": "https://play.google.com/store/apps/details?id=com.arihant.streaks",
+        "softwareVersion": "2.1",
+        "author": { "@type": "Person", "name": "Arihant Tripathy" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+
+    <style>
+        @font-face {
+            font-family: 'Bricolage';
+            src: url('assets/fonts/bricolage.woff2') format('woff2');
+            font-weight: 700 800;
+            font-display: swap;
+        }
+
+        :root {
+            --hue: 16;
+            --accent: hsl(var(--hue) 95% 55%);
+            --accent-soft: hsl(var(--hue) 95% 55% / .13);
+            --accent-glow: hsl(var(--hue) 95% 60% / .28);
+            --bg: #F6F6F7;
+            --card: #FFFFFF;
+            --ink: #17171A;
+            --muted: #64646E;
+            --line: #E7E7EA;
+            --display: 'Bricolage', system-ui, sans-serif;
+            --body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121214;
+                --card: #1D1D21;
+                --ink: #EFEFF1;
+                --muted: #A2A2AC;
+                --line: #2B2B31;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--body);
+            background: var(--bg);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        img { max-width: 100%; height: auto; display: block; }
+
+        a { color: inherit; }
+
+        .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+        /* ---------- nav ---------- */
+        nav {
+            display: flex; align-items: center; gap: 12px;
+            padding: 20px 0;
+        }
+
+        nav .brand {
+            display: flex; align-items: center; gap: 10px;
+            font-family: var(--display); font-weight: 800; font-size: 1.25rem;
+            text-decoration: none;
+        }
+
+        nav .brand img { width: 34px; height: 34px; border-radius: 9px; }
+
+        nav .spacer { flex: 1; }
+
+        nav a.quiet {
+            text-decoration: none; color: var(--muted); font-size: .95rem;
+            padding: 8px 12px; border-radius: 10px;
+        }
+
+        nav a.quiet:hover { color: var(--ink); background: var(--accent-soft); }
+
+        /* ---------- hero ---------- */
+        .hero {
+            display: grid; grid-template-columns: 1.15fr .85fr;
+            gap: 48px; align-items: center;
+            padding: 48px 0 72px;
+        }
+
+        .eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: .82rem; font-weight: 600; letter-spacing: .04em;
+            color: var(--accent);
+            background: var(--accent-soft);
+            padding: 6px 14px; border-radius: 999px;
+            margin-bottom: 22px;
+        }
+
+        h1 {
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: clamp(2.6rem, 6.5vw, 4.4rem);
+            line-height: 1.02;
+            letter-spacing: -.02em;
+            margin-bottom: 20px;
+        }
+
+        h1 .chain { color: var(--accent); white-space: nowrap; }
+
+        .hero p.lead {
+            font-size: 1.13rem; color: var(--muted); max-width: 44ch;
+            margin-bottom: 30px;
+        }
+
+        .cta-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 40px; }
+
+        .btn-play {
+            display: inline-flex; align-items: center; gap: 12px;
+            background: var(--ink); color: var(--bg);
+            text-decoration: none; font-weight: 600; font-size: 1.02rem;
+            padding: 14px 24px; border-radius: 16px;
+            transition: transform .15s ease, box-shadow .15s ease;
+            box-shadow: 0 1px 2px rgb(0 0 0 / .15);
+        }
+
+        .btn-play:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -8px var(--accent-glow); }
+
+        .btn-play svg { width: 22px; height: 22px; }
+
+        .btn-src {
+            text-decoration: none; color: var(--muted); font-weight: 500;
+            padding: 14px 10px;
+        }
+
+        .btn-src:hover { color: var(--ink); }
+
+        /* the signature: hue ring */
+        .ring-row { display: flex; align-items: center; gap: 18px; }
+
+        .ring-shell { position: relative; width: 84px; height: 84px; flex-shrink: 0; }
+
+        .ring {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(from 90deg, #f55, #fd5, #8f4, #2dd, #46f, #d4e, #f55);
+            cursor: grab;
+            touch-action: none;
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 17px), #000 calc(100% - 16px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 17px), #000 calc(100% - 16px));
+        }
+
+        .ring:active { cursor: grabbing; }
+
+        .ring-knob {
+            position: absolute; width: 26px; height: 26px; border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid #fff;
+            box-shadow: 0 1px 6px rgb(0 0 0 / .3);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(calc(var(--hue) * 1deg)) translateX(34px);
+            pointer-events: none;
+        }
+
+        .ring-cap { font-size: .9rem; color: var(--muted); max-width: 24ch; }
+
+        .ring-cap strong { color: var(--ink); }
+
+        /* phone */
+        .phone-col { display: flex; justify-content: center; }
+
+        .phone {
+            width: min(300px, 72vw);
+            border-radius: 38px;
+            padding: 10px;
+            background: #17171A;
+            box-shadow: 0 24px 60px -20px var(--accent-glow), 0 12px 40px -12px rgb(0 0 0 / .35);
+            transform: rotate(2.5deg);
+            transition: transform .4s ease;
+        }
+
+        .phone:hover { transform: rotate(0deg) scale(1.015); }
+
+        .phone img { border-radius: 30px; }
+
+        /* ---------- sections ---------- */
+        section { padding: 64px 0; }
+
+        .kicker {
+            font-family: var(--display); font-weight: 800;
+            font-size: clamp(1.7rem, 4vw, 2.5rem);
+            letter-spacing: -.02em; line-height: 1.1;
+            margin-bottom: 12px;
+        }
+
+        .sub { color: var(--muted); max-width: 56ch; margin-bottom: 40px; }
+
+        /* gallery */
+        .shots {
+            display: grid; grid-auto-flow: column; grid-auto-columns: min(240px, 62vw);
+            gap: 20px; overflow-x: auto; padding: 8px 4px 20px;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: thin;
+        }
+
+        .shots figure { scroll-snap-align: start; }
+
+        .shots img {
+            border-radius: 22px;
+            border: 1px solid var(--line);
+            box-shadow: 0 10px 30px -14px rgb(0 0 0 / .25);
+        }
+
+        .shots figcaption { font-size: .88rem; color: var(--muted); padding: 10px 4px 0; }
+
+        /* widgets */
+        .widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+
+        .widgets figure { background: var(--card); border: 1px solid var(--line); border-radius: 26px; padding: 18px; }
+
+        .widgets img { border-radius: 16px; }
+
+        .widgets figcaption { font-size: .9rem; color: var(--muted); padding: 12px 4px 0; }
+
+        /* features */
+        .grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+        }
+
+        .feature {
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: 20px; padding: 24px 22px;
+            transition: transform .18s ease, border-color .18s ease;
+        }
+
+        .feature:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+        .feature .emoji {
+            display: inline-grid; place-items: center;
+            width: 46px; height: 46px; font-size: 24px;
+            background: var(--accent-soft); border-radius: 14px;
+            margin-bottom: 14px;
+        }
+
+        .feature h3 { font-family: var(--display); font-weight: 700; font-size: 1.06rem; margin-bottom: 6px; }
+
+        .feature p { font-size: .93rem; color: var(--muted); }
+
+        /* footer */
+        footer {
+            border-top: 1px solid var(--line);
+            padding: 36px 0 48px; margin-top: 40px;
+            color: var(--muted); font-size: .92rem;
+        }
+
+        footer .wrap { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+
+        footer .spacer { flex: 1; }
+
+        footer a { color: var(--muted); }
+
+        footer a:hover { color: var(--ink); }
+
+        /* reveal animation (only hidden when JS is running, so content never disappears) */
+        html.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+
+        html.js .reveal.in { opacity: 1; transform: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            html.js .reveal { opacity: 1; transform: none; transition: none; }
+            .phone, .btn-play, .feature { transition: none; }
+        }
+
+        @media (max-width: 800px) {
+            .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 28px; }
+            .phone { transform: none; }
+            .widgets { grid-template-columns: 1fr; }
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 520px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="left-col">
-            <header>
-                <img src="app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" alt="Streaks App Logo" class="app-logo"
-                    width="96" height="96" />
-                <h1>Streaks</h1>
-                <p class="tagline">Build better habits, one day at a time.</p>
-                <a class="download-btn" href="https://play.google.com/store/apps/details?id=com.arihant.streaks" target="_blank">Get the App</a>
-            </header>
-        </div>
-        <div class="right-col">
-            <section>
-                <h2>Features</h2>
-                <ul>
-                    <li>Minimal, clean design</li>
-                    <li>Track daily habits</li>
-                    <li>Set reminders</li>
-                    <li>Home screen widget</li>
-                    <li>Dark & light mode</li>
-                </ul>
-            </section>
-        </div>
+    <div class="wrap">
+        <nav>
+            <a class="brand" href="#">
+                <img src="assets/icon.webp" alt="" width="34" height="34">
+                Streaks
+            </a>
+            <div class="spacer"></div>
+            <a class="quiet" href="https://github.com/Arihant25/Streaks">GitHub</a>
+            <a class="quiet" href="privacy-policy.html">Privacy</a>
+        </nav>
+
+        <header class="hero">
+            <div>
+                <span class="eyebrow">Free · Open source · Android</span>
+                <h1>Don't break <span class="chain">the&nbsp;chain.</span></h1>
+                <p class="lead">
+                    Streaks is a tiny, beautiful habit tracker. One tap a day, a streak for anything,
+                    and a year graph you'll want to keep full — all offline, no account, no ads.
+                </p>
+                <div class="cta-row">
+                    <a class="btn-play" href="https://play.google.com/store/apps/details?id=com.arihant.streaks">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M4 2.7v18.6c0 .5.6.9 1 .6l14.6-9c.5-.3.5-1 0-1.2L5 2.1c-.4-.3-1 0-1 .6z" />
+                        </svg>
+                        Get it on Google Play
+                    </a>
+                    <a class="btn-src" href="https://github.com/Arihant25/Streaks">View the source</a>
+                </div>
+                <div class="ring-row">
+                    <div class="ring-shell">
+                        <div class="ring" id="hueRing" role="slider" tabindex="0" aria-label="Accent color hue"
+                            aria-valuemin="0" aria-valuemax="360" aria-valuenow="16"></div>
+                        <div class="ring-knob" aria-hidden="true"></div>
+                    </div>
+                    <p class="ring-cap"><strong>Drag the ring.</strong> Every habit in the app gets its own
+                        color, picked exactly like this.</p>
+                </div>
+            </div>
+            <div class="phone-col">
+                <div class="phone">
+                    <img src="assets/01-home-light.png" width="720" height="1600" fetchpriority="high"
+                        alt="Streaks home screen listing six colorful habits with their current streak counts">
+                </div>
+            </div>
+        </header>
+
+        <section class="reveal" aria-labelledby="tour">
+            <h2 class="kicker" id="tour">Small app. Big chain.</h2>
+            <p class="sub">Everything lives one tap from the home screen — check off a day, peek at a calendar,
+                or scroll a year of progress.</p>
+            <div class="shots">
+                <figure>
+                    <img src="assets/02-streak-details.png" width="720" height="1600" loading="lazy" decoding="async"
+                        alt="Streak details for a running habit: 47-day current and best streak with a monthly calendar">
+                    <figcaption>Every habit gets a calendar you can edit.</figcaption>
+                </figure>
+                <figure>
+                    <img src="assets/03-year-activity-manage.png" width="720" height="1600" loading="lazy"
+                        decoding="async"
+                        alt="Year activity graph showing months of completions, with reminder, edit, and delete controls">
+                    <figcaption>A year at a glance, GitHub-graph style.</figcaption>
+                </figure>
+                <figure>
+                    <img src="assets/04-create-streak.png" width="720" height="1600" loading="lazy" decoding="async"
+                        alt="Create Streak sheet with an emoji inside a draggable color ring and frequency choices">
+                    <figcaption>Any emoji, any color, any frequency.</figcaption>
+                </figure>
+                <figure>
+                    <img src="assets/05-home-dark.png" width="720" height="1600" loading="lazy" decoding="async"
+                        alt="Streaks home screen in dark mode">
+                    <figcaption>Dark mode that's actually dark.</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="reveal" aria-labelledby="widgets-h">
+            <h2 class="kicker" id="widgets-h">Your home screen, on a streak.</h2>
+            <p class="sub">New in 2.1 — widgets you can actually use. Check habits off without opening the app,
+                pick a grid or list layout, and resize them to show as much as you like.</p>
+            <div class="widgets">
+                <figure>
+                    <img src="assets/06-widget-homescreen.png" width="720" height="1600" loading="lazy"
+                        decoding="async"
+                        alt="Android home screen with Streaks widgets in light style: a checklist widget and a compact grid widget">
+                    <figcaption>List and grid widgets, right where you need them.</figcaption>
+                </figure>
+                <figure>
+                    <img src="assets/07-widget-homescreen-dark.png" width="720" height="1600" loading="lazy"
+                        decoding="async" alt="The same Streaks widgets rendered in dark style on a dark home screen">
+                    <figcaption>They follow your system theme, too.</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="reveal" aria-labelledby="features-h">
+            <h2 class="kicker" id="features-h">Everything you need. Nothing you don't.</h2>
+            <p class="sub">Habit apps love subscriptions, accounts, and streak freezes. Streaks loves getting out
+                of your way.</p>
+            <div class="grid">
+                <div class="feature">
+                    <span class="emoji">✅</span>
+                    <h3>One-swipe check-off</h3>
+                    <p>Tap or swipe a card to mark the day done. Confetti included.</p>
+                </div>
+                <div class="feature">
+                    <span class="emoji">🎨</span>
+                    <h3>Make it yours</h3>
+                    <p>Every habit gets its own emoji and a color you pick on a hue ring.</p>
+                </div>
+                <div class="feature">
+                    <span class="emoji">📆</span>
+                    <h3>Streaks your way</h3>
+                    <p>Daily, weekly, monthly, or yearly — "gym 3× a week" is a real streak here.</p>
+                </div>
+                <div class="feature">
+                    <span class="emoji">📊</span>
+                    <h3>A year at a glance</h3>
+                    <p>A contribution-style graph for your life. Tap any date to fix history.</p>
+                </div>
+                <div class="feature">
+                    <span class="emoji">🔔</span>
+                    <h3>Reminders that respect you</h3>
+                    <p>Per-habit nudges on the days you choose. Nothing more.</p>
+                </div>
+                <div class="feature">
+                    <span class="emoji">🔒</span>
+                    <h3>Yours, offline</h3>
+                    <p>No account, no analytics, no ads. Export or import your data anytime.</p>
+                </div>
+            </div>
+        </section>
     </div>
+
     <footer>
-        Streaks &copy; 2024. All rights reserved. | <a href="privacy-policy.html"
-            style="color: inherit; text-decoration: underline;">Privacy Policy</a>
+        <div class="wrap">
+            <span>Streaks 2.1 · free forever</span>
+            <div class="spacer"></div>
+            <a href="privacy-policy.html">Privacy policy</a>
+            <a href="https://github.com/Arihant25/Streaks">GitHub</a>
+            <span>Made with ❤️ by Arihant Tripathy</span>
+        </div>
     </footer>
+
     <script>
-        document.getElementById('year').textContent = new Date().getFullYear();
+        // Hue ring: drag (or arrow keys) to recolor the page accent.
+        (function () {
+            document.documentElement.classList.add('js');
+            const ring = document.getElementById('hueRing');
+            const root = document.documentElement;
+            let hue = 16;
+
+            function setHue(h) {
+                hue = ((h % 360) + 360) % 360;
+                root.style.setProperty('--hue', hue);
+                ring.setAttribute('aria-valuenow', Math.round(hue));
+            }
+
+            function fromEvent(e) {
+                const r = ring.getBoundingClientRect();
+                const x = e.clientX - (r.left + r.width / 2);
+                const y = e.clientY - (r.top + r.height / 2);
+                setHue(Math.atan2(y, x) * 180 / Math.PI);
+            }
+
+            let dragging = false;
+            ring.addEventListener('pointerdown', e => { dragging = true; ring.setPointerCapture(e.pointerId); fromEvent(e); });
+            ring.addEventListener('pointermove', e => { if (dragging) fromEvent(e); });
+            ring.addEventListener('pointerup', () => { dragging = false; });
+            ring.addEventListener('keydown', e => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { setHue(hue - 8); e.preventDefault(); }
+                if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { setHue(hue + 8); e.preventDefault(); }
+            });
+
+            // Scroll reveal
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+            }, { threshold: 0.12 });
+            document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+        })();
     </script>
 </body>
 
