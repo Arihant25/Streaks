@@ -4,6 +4,16 @@ Streaks is an Android application designed to help users build and maintain posi
 
 **🔒 Privacy First: All your habit data stays securely on your device - no cloud storage, no data collection, no tracking.**
 
+## Screenshots
+
+| Home | Details | Year graph | Create |
+| :--: | :--: | :--: | :--: |
+| ![Home screen with colorful habit cards](screenshots/01-home-light.png) | ![Streak details with calendar](screenshots/02-streak-details.png) | ![Year activity graph and manage section](screenshots/03-year-activity-manage.png) | ![Create streak sheet with color ring](screenshots/04-create-streak.png) |
+
+| Dark mode | Widgets | Widgets (dark) |
+| :--: | :--: | :--: |
+| ![Home screen in dark mode](screenshots/05-home-dark.png) | ![Home screen widgets](screenshots/06-widget-homescreen.png) | ![Home screen widgets in dark mode](screenshots/07-widget-homescreen-dark.png) |
+
 ## Features
 
 ### Habit Tracking
