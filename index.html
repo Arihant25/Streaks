@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Streaks — The minimal habit tracker for Android</title>
+    <title>Streaks: a free habit tracker for Android</title>
     <meta name="description"
-        content="Streaks is a free, minimal habit tracker for Android. One tap a day, colorful streaks for anything, home screen widgets, and a year graph you'll want to keep full. Offline, no account, no ads.">
+        content="Streaks is a free habit tracker for Android. Check habits off once a day, keep them on your home screen with widgets, and see a year of history at a glance. Works offline, with no ads and no account.">
     <link rel="canonical" href="https://arihant25.github.io/Streaks/">
     <meta name="theme-color" content="#F6F6F7" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
@@ -16,17 +16,17 @@
     <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Streaks">
-    <meta property="og:title" content="Streaks — The minimal habit tracker for Android">
+    <meta property="og:title" content="Streaks: a free habit tracker for Android">
     <meta property="og:description"
-        content="One tap a day, colorful streaks for anything, home screen widgets, and a year graph you'll want to keep full. Free, offline, no ads.">
+        content="Check habits off once a day, keep them on your home screen with widgets, and see a year of history at a glance. Free, offline, no ads.">
     <meta property="og:url" content="https://arihant25.github.io/Streaks/">
     <meta property="og:image" content="https://arihant25.github.io/Streaks/assets/og-card.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Streaks — The minimal habit tracker for Android">
+    <meta name="twitter:title" content="Streaks: a free habit tracker for Android">
     <meta name="twitter:description"
-        content="One tap a day, colorful streaks for anything, home screen widgets, and a year graph you'll want to keep full. Free, offline, no ads.">
+        content="Check habits off once a day, keep them on your home screen with widgets, and see a year of history at a glance. Free, offline, no ads.">
     <meta name="twitter:image" content="https://arihant25.github.io/Streaks/assets/og-card.png">
 
     <link rel="preload" href="assets/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
@@ -130,12 +130,36 @@
         }
 
         .eyebrow {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-size: .82rem; font-weight: 600; letter-spacing: .04em;
-            color: var(--accent);
-            background: var(--accent-soft);
-            padding: 6px 14px; border-radius: 999px;
-            margin-bottom: 22px;
+            display: block;
+            font-size: .85rem; font-weight: 600; letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 18px;
+        }
+
+        /* custom scrollbars, vertical and horizontal */
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+
+        ::-webkit-scrollbar-track { background: transparent; border-radius: 8px; }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, hsl(var(--hue) 95% 60%), hsl(calc(var(--hue) + 40) 95% 55%));
+            border-radius: 8px;
+            border: 3px solid var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb:horizontal {
+            background: linear-gradient(90deg, hsl(var(--hue) 95% 60%), hsl(calc(var(--hue) + 40) 95% 55%));
+        }
+
+        ::-webkit-scrollbar-thumb:hover { border-width: 2px; }
+
+        ::-webkit-scrollbar-corner { background: transparent; }
+
+        .shots::-webkit-scrollbar-track { background: var(--line); border: 4px solid var(--bg); }
+
+        @supports not selector(::-webkit-scrollbar) {
+            html, .shots { scrollbar-color: var(--accent) transparent; }
         }
 
         h1 {
@@ -236,15 +260,23 @@
 
         .sub { color: var(--muted); max-width: 56ch; margin-bottom: 40px; }
 
-        /* gallery */
+        /* gallery: a plain grid when it fits, a snap-scrolling strip when it doesn't */
         .shots {
-            display: grid; grid-auto-flow: column; grid-auto-columns: min(240px, 62vw);
-            gap: 20px; overflow-x: auto; padding: 8px 4px 20px;
-            scroll-snap-type: x mandatory;
-            scrollbar-width: thin;
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px; padding: 8px 4px 20px;
         }
 
-        .shots figure { scroll-snap-align: start; }
+        @media (max-width: 999px) {
+            .shots {
+                grid-template-columns: none;
+                grid-auto-flow: column; grid-auto-columns: min(240px, 62vw);
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scrollbar-width: thin;
+            }
+
+            .shots figure { scroll-snap-align: start; }
+        }
 
         .shots img {
             border-radius: 22px;
@@ -263,29 +295,21 @@
 
         .widgets figcaption { font-size: .9rem; color: var(--muted); padding: 12px 4px 0; }
 
-        /* features */
+        /* details list */
         .grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px 56px;
         }
 
-        .feature {
-            background: var(--card); border: 1px solid var(--line);
-            border-radius: 20px; padding: 24px 22px;
-            transition: transform .18s ease, border-color .18s ease;
+        .feature { padding: 18px 0; border-bottom: 1px dashed var(--line); }
+
+        .feature h3 {
+            font-family: var(--display); font-weight: 700; font-size: 1.05rem;
+            margin-bottom: 4px;
         }
 
-        .feature:hover { transform: translateY(-3px); border-color: var(--accent); }
+        .feature h3 .emoji { margin-right: 8px; }
 
-        .feature .emoji {
-            display: inline-grid; place-items: center;
-            width: 46px; height: 46px; font-size: 24px;
-            background: var(--accent-soft); border-radius: 14px;
-            margin-bottom: 14px;
-        }
-
-        .feature h3 { font-family: var(--display); font-weight: 700; font-size: 1.06rem; margin-bottom: 6px; }
-
-        .feature p { font-size: .93rem; color: var(--muted); }
+        .feature p { font-size: .95rem; color: var(--muted); }
 
         /* footer */
         footer {
@@ -342,11 +366,11 @@
 
         <header class="hero">
             <div>
-                <span class="eyebrow">Free · Open source · Android</span>
+                <span class="eyebrow">A free habit tracker for Android</span>
                 <h1>Don't break <span class="chain">the&nbsp;chain.</span></h1>
                 <p class="lead">
-                    Streaks is a tiny, beautiful habit tracker. One tap a day, a streak for anything,
-                    and a year graph you'll want to keep full — all offline, no account, no ads.
+                    Pick a habit, check it off once a day, and watch the chain grow.
+                    Streaks works offline, shows no ads, and never asks you to sign in.
                 </p>
                 <div class="cta-row">
                     <a class="btn-play" href="https://play.google.com/store/apps/details?id=com.arihant.streaks">
@@ -363,8 +387,8 @@
                             aria-valuemin="0" aria-valuemax="360" aria-valuenow="16"></div>
                         <div class="ring-knob" aria-hidden="true"></div>
                     </div>
-                    <p class="ring-cap"><strong>Drag the ring.</strong> Every habit in the app gets its own
-                        color, picked exactly like this.</p>
+                    <p class="ring-cap"><strong>Drag the ring.</strong> This is how you pick a habit's
+                        color in the app.</p>
                 </div>
             </div>
             <div class="phone-col">
@@ -376,87 +400,80 @@
         </header>
 
         <section class="reveal" aria-labelledby="tour">
-            <h2 class="kicker" id="tour">Small app. Big chain.</h2>
-            <p class="sub">Everything lives one tap from the home screen — check off a day, peek at a calendar,
-                or scroll a year of progress.</p>
+            <h2 class="kicker" id="tour">What it looks like</h2>
+            <p class="sub">Check off the day from the list. Open a habit to see its calendar and a year of
+                history.</p>
             <div class="shots">
                 <figure>
                     <img src="assets/02-streak-details.png" width="720" height="1600" loading="lazy" decoding="async"
                         alt="Streak details for a running habit: 47-day current and best streak with a monthly calendar">
-                    <figcaption>Every habit gets a calendar you can edit.</figcaption>
+                    <figcaption>Each habit has a calendar. Tap a date to change it.</figcaption>
                 </figure>
                 <figure>
                     <img src="assets/03-year-activity-manage.png" width="720" height="1600" loading="lazy"
                         decoding="async"
                         alt="Year activity graph showing months of completions, with reminder, edit, and delete controls">
-                    <figcaption>A year at a glance, GitHub-graph style.</figcaption>
+                    <figcaption>The year view. Full squares are good days.</figcaption>
                 </figure>
                 <figure>
                     <img src="assets/04-create-streak.png" width="720" height="1600" loading="lazy" decoding="async"
                         alt="Create Streak sheet with an emoji inside a draggable color ring and frequency choices">
-                    <figcaption>Any emoji, any color, any frequency.</figcaption>
+                    <figcaption>New habits get an emoji, a color, and a schedule.</figcaption>
                 </figure>
                 <figure>
                     <img src="assets/05-home-dark.png" width="720" height="1600" loading="lazy" decoding="async"
                         alt="Streaks home screen in dark mode">
-                    <figcaption>Dark mode that's actually dark.</figcaption>
+                    <figcaption>And a proper dark mode.</figcaption>
                 </figure>
             </div>
         </section>
 
         <section class="reveal" aria-labelledby="widgets-h">
-            <h2 class="kicker" id="widgets-h">Your home screen, on a streak.</h2>
-            <p class="sub">New in 2.1 — widgets you can actually use. Check habits off without opening the app,
-                pick a grid or list layout, and resize them to show as much as you like.</p>
+            <h2 class="kicker" id="widgets-h">Widgets, new in 2.1</h2>
+            <p class="sub">Check habits off straight from your home screen. There are list and grid layouts,
+                and they show more as you resize them.</p>
             <div class="widgets">
                 <figure>
                     <img src="assets/06-widget-homescreen.png" width="720" height="1600" loading="lazy"
                         decoding="async"
                         alt="Android home screen with Streaks widgets in light style: a checklist widget and a compact grid widget">
-                    <figcaption>List and grid widgets, right where you need them.</figcaption>
+                    <figcaption>The list widget has check-off buttons of its own.</figcaption>
                 </figure>
                 <figure>
                     <img src="assets/07-widget-homescreen-dark.png" width="720" height="1600" loading="lazy"
                         decoding="async" alt="The same Streaks widgets rendered in dark style on a dark home screen">
-                    <figcaption>They follow your system theme, too.</figcaption>
+                    <figcaption>The same widgets after sunset.</figcaption>
                 </figure>
             </div>
         </section>
 
         <section class="reveal" aria-labelledby="features-h">
-            <h2 class="kicker" id="features-h">Everything you need. Nothing you don't.</h2>
-            <p class="sub">Habit apps love subscriptions, accounts, and streak freezes. Streaks loves getting out
-                of your way.</p>
+            <h2 class="kicker" id="features-h">The details</h2>
+            <p class="sub">No subscriptions and no streak freezes. Just the parts a habit tracker needs.</p>
             <div class="grid">
                 <div class="feature">
-                    <span class="emoji">✅</span>
-                    <h3>One-swipe check-off</h3>
-                    <p>Tap or swipe a card to mark the day done. Confetti included.</p>
+                    <h3><span class="emoji">✅</span>Check off with a swipe</h3>
+                    <p>Tap or swipe a card and the day is done. You get confetti.</p>
                 </div>
                 <div class="feature">
-                    <span class="emoji">🎨</span>
-                    <h3>Make it yours</h3>
-                    <p>Every habit gets its own emoji and a color you pick on a hue ring.</p>
+                    <h3><span class="emoji">🎨</span>Your colors</h3>
+                    <p>Each habit has its own emoji and a color you pick on the ring.</p>
                 </div>
                 <div class="feature">
-                    <span class="emoji">📆</span>
-                    <h3>Streaks your way</h3>
-                    <p>Daily, weekly, monthly, or yearly — "gym 3× a week" is a real streak here.</p>
+                    <h3><span class="emoji">📆</span>Any schedule</h3>
+                    <p>Daily, weekly, monthly or yearly. Gym three times a week counts as a streak.</p>
                 </div>
                 <div class="feature">
-                    <span class="emoji">📊</span>
-                    <h3>A year at a glance</h3>
-                    <p>A contribution-style graph for your life. Tap any date to fix history.</p>
+                    <h3><span class="emoji">📊</span>A year of history</h3>
+                    <p>A grid of your whole year, one square per day. Tap any date to fix it.</p>
                 </div>
                 <div class="feature">
-                    <span class="emoji">🔔</span>
-                    <h3>Reminders that respect you</h3>
-                    <p>Per-habit nudges on the days you choose. Nothing more.</p>
+                    <h3><span class="emoji">🔔</span>Reminders</h3>
+                    <p>Set one per habit, on the days you want. That's all they do.</p>
                 </div>
                 <div class="feature">
-                    <span class="emoji">🔒</span>
-                    <h3>Yours, offline</h3>
-                    <p>No account, no analytics, no ads. Export or import your data anytime.</p>
+                    <h3><span class="emoji">🔒</span>Offline and yours</h3>
+                    <p>No account, no analytics, no ads. Export your data to a file whenever you like.</p>
                 </div>
             </div>
         </section>
@@ -464,7 +481,7 @@
 
     <footer>
         <div class="wrap">
-            <span>Streaks 2.1 · free forever</span>
+            <span>Streaks 2.1, free, no ads</span>
             <div class="spacer"></div>
             <a href="privacy-policy.html">Privacy policy</a>
             <a href="https://github.com/Arihant25/Streaks">GitHub</a>
