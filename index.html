@@ -178,7 +178,16 @@
             margin-bottom: 30px;
         }
 
-        .cta-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 40px; }
+        .cta-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+
+        .proof { font-size: .95rem; color: var(--muted); margin-bottom: 36px; }
+
+        .proof .stars {
+            color: var(--accent); letter-spacing: 2px; margin-right: 6px;
+            background: linear-gradient(90deg, var(--accent) 90%, var(--line) 90%);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
         .btn-play {
             display: inline-flex; align-items: center; gap: 12px;
@@ -381,6 +390,8 @@
                     </a>
                     <a class="btn-src" href="https://github.com/Arihant25/Streaks">View the source</a>
                 </div>
+                <p class="proof"><span class="stars" aria-hidden="true">★★★★★</span> Rated 4.5 on Google Play,
+                    with over 10,000 installs.</p>
                 <div class="ring-row">
                     <div class="ring-shell">
                         <div class="ring" id="hueRing" role="slider" tabindex="0" aria-label="Accent color hue"
