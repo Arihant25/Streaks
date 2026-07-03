@@ -82,9 +82,10 @@ class StreakDetailsFragment : Fragment() {
                 setupStreakStatsLayout(binding, streak)
 
                 // --- GitHub-style year graph ---
-                val yearGraph = createYearGraphView(streak)
                 binding.yearGraphContainer.removeAllViews()
-                binding.yearGraphContainer.addView(yearGraph)
+                binding.yearGraphContainer.addView(
+                        createYearGraphView(streak, binding, animate = true)
+                )
 
                 // Adjust the height of the yearGraphContainer to wrap its content
                 val yearGraphContainerLayoutParams = binding.yearGraphContainer.layoutParams
@@ -99,13 +100,16 @@ class StreakDetailsFragment : Fragment() {
                 setupMonthlyViewWithNavigation(binding, streak)
                 maybeShowCalendarTooltip(binding.root)
 
-                // --- Reminder section ---
+                // --- Manage cards ---
                 this.reminder = streak.reminder
                 updateReminderSummary(binding)
-                binding.buttonSetReminder.setOnClickListener { showReminderDialog(binding) }
+                addPressAnimation(binding.cardReminder)
+                addPressAnimation(binding.cardEdit)
+                addPressAnimation(binding.cardDelete)
+                binding.cardReminder.setOnClickListener { showReminderDialog(binding) }
 
-                // --- Edit button ---
-                binding.buttonEdit.setOnClickListener {
+                // --- Edit card ---
+                binding.cardEdit.setOnClickListener {
                         val dialog =
                                 AddStreakDialog(
                                         onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
@@ -139,8 +143,8 @@ class StreakDetailsFragment : Fragment() {
                         dialog.show(parentFragmentManager, "EditStreakDialog")
                 }
 
-                // --- Delete button ---
-                binding.buttonDelete.setOnClickListener {
+                // --- Delete card ---
+                binding.cardDelete.setOnClickListener {
                         MaterialAlertDialogBuilder(requireContext())
                                 .setTitle("Delete Streak")
                                 .setMessage("Are you sure you want to delete this streak?")
@@ -168,7 +172,9 @@ class StreakDetailsFragment : Fragment() {
                         val updated = streaks.find { it.id == streak.id } ?: return@observe
                         updateStreakStats(updated)
                         binding.yearGraphContainer.removeAllViews()
-                        binding.yearGraphContainer.addView(createYearGraphView(updated))
+                        binding.yearGraphContainer.addView(
+                                createYearGraphView(updated, binding, animate = false)
+                        )
                         refreshMonthlyView(binding, updated)
                         renderQuickStats(binding, updated)
                 }
@@ -565,15 +571,14 @@ class StreakDetailsFragment : Fragment() {
                 }
         }
 
-        private fun createYearGraphView(streak: com.arihant.streaks.data.Streak): View {
+        private fun createYearGraphView(
+                streak: com.arihant.streaks.data.Streak,
+                binding: FragmentStreakDetailsBinding,
+                animate: Boolean
+        ): View {
                 val context = requireContext()
                 val completions = streak.asLocalDateCompletions().toSet()
-                
                 val year = java.time.LocalDate.now().year
-                val startDate = java.time.LocalDate.of(year, 1, 1)
-                val endDate = java.time.LocalDate.of(year, 12, 31)
-                val daysInYear =
-                        if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 366 else 365
                 val streakColor =
                         try {
                                 android.graphics.Color.parseColor(streak.color)
@@ -581,107 +586,141 @@ class StreakDetailsFragment : Fragment() {
                                 android.graphics.Color.parseColor("#FF9900")
                         }
 
-                val container = android.widget.LinearLayout(context)
-                container.orientation = android.widget.LinearLayout.VERTICAL
-                container.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24))
-                container.setBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                val card =
+                        com.google.android.material.card.MaterialCardView(context).apply {
+                                radius = dpToPx(20).toFloat()
+                                cardElevation = 0f
+                                strokeWidth = dpToPx(1)
+                                strokeColor = ContextCompat.getColor(context, R.color.gray_medium)
+                                setCardBackgroundColor(
+                                        ContextCompat.getColor(context, R.color.white)
+                                )
+                                layoutParams =
+                                        ViewGroup.LayoutParams(
+                                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                                ViewGroup.LayoutParams.WRAP_CONTENT
+                                        )
+                        }
+
+                val column = android.widget.LinearLayout(context)
+                column.orientation = android.widget.LinearLayout.VERTICAL
+                column.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(14))
+
+                val header = android.widget.LinearLayout(context)
+                header.orientation = android.widget.LinearLayout.HORIZONTAL
+                header.gravity = android.view.Gravity.CENTER_VERTICAL
 
                 val title = android.widget.TextView(context)
                 title.text = "$year Activity"
                 title.textSize = 16f
+                title.typeface = android.graphics.Typeface.DEFAULT_BOLD
                 title.setTextColor(
                         resolveThemeColor(
                                 context,
                                 com.google.android.material.R.attr.colorOnSurface
                         )
                 )
-                title.typeface = android.graphics.Typeface.DEFAULT_BOLD
-                title.setPadding(0, 0, 0, dpToPx(16))
-                title.gravity = android.view.Gravity.CENTER
-                container.addView(title)
+                title.layoutParams =
+                        android.widget.LinearLayout.LayoutParams(
+                                0,
+                                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                1f
+                        )
+                header.addView(title)
 
-                val cellSizeDp = 12
-                val spaceBetweenCellsDp = 2
-                val cellSizePx = dpToPx(cellSizeDp)
-                val cellMarginPx = dpToPx(spaceBetweenCellsDp / 2)
+                column.addView(header)
 
-                // Create scrollable container for the graph
-                val scrollContainer = android.widget.HorizontalScrollView(context)
-                scrollContainer.layoutParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                scrollContainer.setPadding(0, dpToPx(8), 0, dpToPx(8))
-                scrollContainer.isHorizontalScrollBarEnabled = false  // Hide scrollbar for cleaner look
-
-                val gridContainer = android.widget.LinearLayout(context)
-                gridContainer.orientation = android.widget.LinearLayout.HORIZONTAL
-                gridContainer.layoutParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-
-                val colorEmpty = ContextCompat.getColor(context, R.color.gray_medium)
-                val colorCompleted = streakColor
-
-                // GitHub-style: organize by weeks (columns) and days of week (rows)
-                // Start from the first configured week-start day of the year (or before if needed)
-                var weekStartDate = startDate
-                while (weekStartDate.dayOfWeek != com.arihant.streaks.utils.WeekConfig.firstDayOfWeek) {
-                    weekStartDate = weekStartDate.minusDays(1)
+                val graph = com.arihant.streaks.ui.views.YearGraphView(context)
+                graph.onDayTapped = { date, isCompleted ->
+                        showDateToggleConfirmation(date, isCompleted, streak, binding)
                 }
-                
-                var currentWeekStart = weekStartDate
+                graph.setData(completions, streakColor, streak.frequency, animate)
 
-                // Create weeks until we cover the entire year
-                while (currentWeekStart <= endDate) {
-                    // Create a column for this week
-                    val weekColumn = android.widget.LinearLayout(context)
-                    weekColumn.orientation = android.widget.LinearLayout.VERTICAL
-                    val columnParams = android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    columnParams.setMargins(cellMarginPx, 0, cellMarginPx, 0)
-                    weekColumn.layoutParams = columnParams
+                val scroll = android.widget.HorizontalScrollView(context)
+                scroll.isHorizontalScrollBarEnabled = false
+                scroll.setPadding(0, dpToPx(12), 0, dpToPx(10))
+                scroll.addView(graph)
+                column.addView(scroll)
+                // Land with today's week centred instead of January
+                scroll.post {
+                        scroll.scrollTo(
+                                (graph.todayScrollX() - scroll.width / 2).coerceAtLeast(0),
+                                0
+                        )
+                }
 
-                    // Create 7 cells for each day of the week (Sunday to Saturday)
-                    for (dayOfWeek in 0..6) {
-                        val cellDate = currentWeekStart.plusDays(dayOfWeek.toLong())
-                        val cellView = android.view.View(context)
-                        val cellParams = android.widget.LinearLayout.LayoutParams(cellSizePx, cellSizePx)
-                        cellParams.setMargins(0, cellMarginPx, 0, cellMarginPx)
-                        cellView.layoutParams = cellParams
+                // Less -> More legend for the streak-depth ramp
+                val legend = android.widget.LinearLayout(context)
+                legend.orientation = android.widget.LinearLayout.HORIZONTAL
+                legend.gravity = android.view.Gravity.CENTER_VERTICAL or android.view.Gravity.END
 
-                        // Only show and fill cells within the current year
-                        if (cellDate.year == year) {
-                            val cellDrawable = GradientDrawable()
-                            cellDrawable.cornerRadius = dpToPx(3).toFloat()
-                            cellDrawable.setColor(
-                                if (completions.contains(cellDate)) colorCompleted else colorEmpty
-                            )
-                            cellView.background = cellDrawable
-                        } else {
-                            // Make cells outside the year transparent
-                            cellView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                fun legendLabel(text: String): TextView {
+                        return TextView(context).apply {
+                                this.text = text
+                                textSize = 11f
+                                setTextColor(
+                                        resolveThemeColor(
+                                                context,
+                                                com.google
+                                                        .android
+                                                        .material
+                                                        .R
+                                                        .attr
+                                                        .colorOnSurfaceVariant
+                                        )
+                                )
                         }
-
-                        weekColumn.addView(cellView)
-                    }
-
-                    gridContainer.addView(weekColumn)
-                    currentWeekStart = currentWeekStart.plusWeeks(1)
-                    
-                    // Stop if we've gone well past the end of the year
-                    if (currentWeekStart.minusDays(6).year > year) {
-                        break
-                    }
                 }
-                
-                scrollContainer.addView(gridContainer)
 
-                container.addView(scrollContainer)
-                return container
+                legend.addView(legendLabel("Less"))
+                val swatchSize = dpToPx(11)
+                for (level in 0..4) {
+                        val swatch = View(context)
+                        val lp = android.widget.LinearLayout.LayoutParams(swatchSize, swatchSize)
+                        lp.marginStart = if (level == 0) dpToPx(6) else dpToPx(3)
+                        if (level == 4) lp.marginEnd = dpToPx(6)
+                        swatch.layoutParams = lp
+                        swatch.background =
+                                GradientDrawable().apply {
+                                        cornerRadius = dpToPx(3).toFloat()
+                                        setColor(
+                                                if (level == 0) graph.colorForEmpty()
+                                                else graph.rampColor(level)
+                                        )
+                                }
+                        legend.addView(swatch)
+                }
+                legend.addView(legendLabel("More"))
+                column.addView(legend)
+
+                card.addView(column)
+                return card
+        }
+
+        // Cards shrink slightly on press and spring back on release
+        private fun addPressAnimation(view: View) {
+                view.setOnTouchListener { v, event ->
+                        when (event.action) {
+                                android.view.MotionEvent.ACTION_DOWN ->
+                                        v.animate()
+                                                .scaleX(0.97f)
+                                                .scaleY(0.97f)
+                                                .setDuration(90)
+                                                .start()
+                                android.view.MotionEvent.ACTION_UP,
+                                android.view.MotionEvent.ACTION_CANCEL ->
+                                        v.animate()
+                                                .scaleX(1f)
+                                                .scaleY(1f)
+                                                .setDuration(200)
+                                                .setInterpolator(
+                                                        android.view.animation
+                                                                .OvershootInterpolator(2f)
+                                                )
+                                                .start()
+                        }
+                        false
+                }
         }
 
         private fun setupMonthlyViewWithNavigation(binding: FragmentStreakDetailsBinding, streak: com.arihant.streaks.data.Streak) {
@@ -720,10 +759,20 @@ class StreakDetailsFragment : Fragment() {
                         displayDate.month.name.lowercase().replaceFirstChar { it.uppercase() } +
                                 " " +
                                 displayDate.year
+                val card = com.google.android.material.card.MaterialCardView(context).apply {
+                        radius = dpToPx(20).toFloat()
+                        cardElevation = 0f
+                        strokeWidth = dpToPx(1)
+                        strokeColor = ContextCompat.getColor(context, R.color.gray_medium)
+                        setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                        layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
+                }
                 val container = android.widget.LinearLayout(context)
                 container.orientation = android.widget.LinearLayout.VERTICAL
                 container.setPadding(16, 16, 16, 16)
-                container.setBackgroundColor(ContextCompat.getColor(context, R.color.white))
                 container.layoutParams =
                         android.widget.LinearLayout.LayoutParams(
                                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
@@ -999,7 +1048,8 @@ class StreakDetailsFragment : Fragment() {
                 }
 
                 container.addView(calendarGrid)
-                return container
+                card.addView(container)
+                return card
         }
 
         // Show a "tap any date" tooltip over today's cell on the first two
@@ -1117,8 +1167,8 @@ class StreakDetailsFragment : Fragment() {
         }
 
         private fun updateReminderSummary(binding: FragmentStreakDetailsBinding) {
-                binding.textReminderSummary.text = reminder?.toSummary() ?: "No reminder set"
-                binding.buttonSetReminder.text = if (reminder != null) "Edit" else "Set Reminder"
+                binding.textReminderSummary.text =
+                        reminder?.toSummary() ?: "None set — tap to add one"
         }
 
         private fun showReminderDialog(binding: FragmentStreakDetailsBinding) {

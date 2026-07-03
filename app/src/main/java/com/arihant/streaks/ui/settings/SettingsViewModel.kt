@@ -28,12 +28,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val THEME_KEY = stringPreferencesKey("theme")
     private val NOTIFICATIONS_KEY = booleanPreferencesKey("notifications_enabled")
+    private val SHOW_WEEK_GRAPH_KEY = booleanPreferencesKey("show_week_graph")
 
-    private val _theme = MutableStateFlow("system")
-    val theme: StateFlow<String> = _theme
+    // null until the stored value loads, so observers never act on a fake default
+    private val _theme = MutableStateFlow<String?>(null)
+    val theme: StateFlow<String?> = _theme
 
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled
+
+    private val _showWeekGraph = MutableStateFlow<Boolean?>(null)
+    val showWeekGraph: StateFlow<Boolean?> = _showWeekGraph
 
     // Expose streaks for export/import
     val streaksLiveData: LiveData<List<Streak>> = repository.streaks
@@ -49,6 +54,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _notificationsEnabled.value = it
             }
         }
+        viewModelScope.launch {
+            context.dataStore.data.map { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] ?: true }.collect {
+                _showWeekGraph.value = it
+            }
+        }
     }
 
     fun setTheme(theme: String) {
@@ -58,6 +68,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             context.dataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
+        }
+    }
+
+    fun setShowWeekGraph(show: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] = show }
         }
     }
 

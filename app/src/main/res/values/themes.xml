@@ -7,8 +7,13 @@
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/orange_dark</item>
         <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">@color/gray_dark</item>
+        <!-- Status bar merges with the light surfaces behind it -->
+        <item name="android:statusBarColor">@color/card_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <!-- Match the screen background so fragment transitions never flash -->
+        <item name="android:windowBackground">@color/screen_background</item>
+        <item name="android:navigationBarColor">@color/screen_background</item>
         <!-- Customize your theme here. -->
     </style>
+
 </resources>

@@ -1,15 +1,15 @@
 package com.arihant.streaks
 
 import android.os.Bundle
+import android.view.animation.OvershootInterpolator
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.findNavController
-import androidx.navigation.ui.setupWithNavController
+import androidx.navigation.fragment.NavHostFragment
 import com.arihant.streaks.databinding.ActivityMainBinding
 import com.arihant.streaks.ui.settings.SettingsViewModel
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
 
         // Apply the saved theme on launch (previously only applied when opening Settings)
         lifecycleScope.launch {
-            settingsViewModel.theme.collect { theme ->
+            settingsViewModel.theme.filterNotNull().collect { theme ->
                 val mode =
                         when (theme) {
                             "light" -> AppCompatDelegate.MODE_NIGHT_NO
@@ -41,35 +41,45 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val navView: BottomNavigationView = binding.navView
+        // FragmentContainerView: the NavController must be fetched from the
+        // NavHostFragment, findNavController() fails during onCreate
+        val navHostFragment =
+                supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
+                        as NavHostFragment
+        val navController = navHostFragment.navController
 
-        val navController = findNavController(R.id.nav_host_fragment_activity_main)
-        navView.setupWithNavController(navController)
+        binding.tabHome.setOnClickListener {
+            if (navController.currentDestination?.id != R.id.navigation_home) {
+                navController.navigate(R.id.navigation_home)
+            }
+        }
+        binding.tabSettings.setOnClickListener {
+            if (navController.currentDestination?.id != R.id.navigation_settings) {
+                navController.navigate(R.id.navigation_settings)
+            }
+        }
 
-        // Add custom navigation listener to prevent reloading when already on the same page
-        navView.setOnItemSelectedListener { item ->
-            val currentDestination = navController.currentDestination?.id
-
-            when (item.itemId) {
-                R.id.navigation_home -> {
-                    if (currentDestination != R.id.navigation_home) {
-                        navController.navigate(R.id.navigation_home)
-                    }
-                    true
-                }
-                R.id.navigation_settings -> {
-                    if (currentDestination != R.id.navigation_settings) {
-                        navController.navigate(R.id.navigation_settings)
-                    }
-                    true
-                }
-                else -> {
-                    navController.navigate(item.itemId)
-                    true
-                }
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.navigation_home -> setSelectedTab(0)
+                R.id.navigation_settings -> setSelectedTab(1)
+                // Other destinations (e.g. streak details) keep the last selection
             }
         }
     }
 
-    fun getBottomNavigationView(): BottomNavigationView = binding.navView
+    private fun setSelectedTab(index: Int) {
+        val tabWidth = 100f * resources.displayMetrics.density
+        binding.navIndicator
+                .animate()
+                .translationX(index * tabWidth)
+                .setDuration(350)
+                .setInterpolator(OvershootInterpolator(1.1f))
+                .start()
+
+        val orange = getColor(R.color.orange)
+        val gray = getColor(R.color.gray_dark)
+        binding.iconHome.setColorFilter(if (index == 0) orange else gray)
+        binding.iconSettings.setColorFilter(if (index == 1) orange else gray)
+    }
 }

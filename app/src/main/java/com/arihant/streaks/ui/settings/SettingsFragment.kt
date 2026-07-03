@@ -9,11 +9,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.Fragment
@@ -31,6 +28,7 @@ import com.arihant.streaks.utils.WeekConfig
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -39,6 +37,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.time.LocalDate
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
@@ -105,8 +104,8 @@ class SettingsFragment : Fragment() {
         setupNotificationSwitch()
         setupNotificationChannelButton()
         setupTestNotificationButton()
-        setupThemeSpinner()
-        setupFirstDaySpinner()
+        setupThemeSelector()
+        setupFirstDaySelector()
         setupExportImportButtons()
         
     
@@ -132,10 +131,16 @@ class SettingsFragment : Fragment() {
     private fun setupClickListeners() {
         binding.btnAddStreak.setOnClickListener { showAddStreakDialog() }
         binding.textPrivacyPolicy.setOnClickListener {
-            val url = "https://Arihant25.github.io/streaks/privacy-policy.html"
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            startActivity(intent)
+            openUrl("https://Arihant25.github.io/streaks/privacy-policy.html")
         }
+        binding.rowAuthor.setOnClickListener { openUrl("https://arihant25.github.io") }
+        binding.rowSourceCode.setOnClickListener {
+            openUrl("https://github.com/Arihant25/streaks")
+        }
+    }
+
+    private fun openUrl(url: String) {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
     private fun setupNotificationSwitch() {
         binding.switchEnableNotifications.setOnCheckedChangeListener { _, isChecked ->
@@ -168,83 +173,54 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun setupThemeSpinner() {
-        val adapter =
-                ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, themeOptions)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerTheme.adapter = adapter
-
-        // Remove duplicate line
-        binding.spinnerTheme.setSelection(0)
-
-        // Fix spinner listener - use proper AdapterView.OnItemSelectedListener
-        binding.spinnerTheme.onItemSelectedListener =
-                object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long
-                    ) {
+    private fun setupThemeSelector() {
+        binding.rowTheme.setOnClickListener {
+            val current =
+                    when (settingsViewModel.theme.value) {
+                        "light" -> 1
+                        "dark" -> 2
+                        else -> 0
+                    }
+            MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(getString(R.string.theme))
+                    .setSingleChoiceItems(themeOptions.toTypedArray(), current) { dialog, which ->
                         val theme =
-                                when (position) {
+                                when (which) {
                                     1 -> "light"
                                     2 -> "dark"
                                     else -> "system"
                                 }
-                        // The spinner fires once on layout with the default position;
-                        // only persist real changes so the saved theme isn't overwritten
-                        if (theme != settingsViewModel.theme.value) {
-                            settingsViewModel.setTheme(theme)
-                        }
+                        // Persist only; MainActivity observes the store and applies night mode
+                        settingsViewModel.setTheme(theme)
+                        dialog.dismiss()
                     }
-
-                    override fun onNothingSelected(parent: AdapterView<*>?) {
-                        // Do nothing
-                    }
-                }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+        }
     }
 
-    private fun setupFirstDaySpinner() {
+    private fun setupFirstDaySelector() {
         WeekConfig.init(requireContext())
         val days = DayOfWeek.values() // MONDAY..SUNDAY
         val names = days.map { it.getDisplayName(TextStyle.FULL, Locale.getDefault()) }
-        val adapter =
-                ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerFirstDay.adapter = adapter
-        binding.spinnerFirstDay.setSelection(WeekConfig.firstDayOfWeek.value - 1)
+        binding.textFirstDayValue.text = names[WeekConfig.firstDayOfWeek.value - 1]
 
-        binding.spinnerFirstDay.onItemSelectedListener =
-                object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long
-                    ) {
-                        val day = days[position]
-                        // The spinner fires once on layout with the current selection;
-                        // only recalculate streaks on a real change
+        binding.rowFirstDay.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(getString(R.string.start_week_on))
+                    .setSingleChoiceItems(
+                            names.toTypedArray(),
+                            WeekConfig.firstDayOfWeek.value - 1
+                    ) { dialog, which ->
+                        val day = days[which]
                         if (day != WeekConfig.firstDayOfWeek) {
                             settingsViewModel.setFirstDayOfWeek(day)
                         }
+                        binding.textFirstDayValue.text = names[which]
+                        dialog.dismiss()
                     }
-
-                    override fun onNothingSelected(parent: AdapterView<*>?) {
-                        // Do nothing
-                    }
-                }
-    }
-
-    private fun applyTheme(theme: String) {
-        when (theme) {
-            "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else ->
-                    AppCompatDelegate.setDefaultNightMode(
-                            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                    )
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
         }
     }
 
@@ -259,7 +235,7 @@ class SettingsFragment : Fragment() {
         val streaks = settingsViewModel.getStreaksForExportDto()
         val settings =
                 mapOf(
-                        "theme" to settingsViewModel.theme.value,
+                        "theme" to (settingsViewModel.theme.value ?: "system"),
                         "notifications_enabled" to settingsViewModel.notificationsEnabled.value,
                         "first_day_of_week" to WeekConfig.firstDayOfWeek.value
                 )
@@ -325,12 +301,13 @@ class SettingsFragment : Fragment() {
                 settingsViewModel.setTheme(theme)
                 settingsViewModel.setNotificationEnabled(notifications)
                 binding.switchEnableNotifications.isChecked = notifications
-                applyTheme(theme)
                 // Gson parses JSON numbers as Double
                 val firstDay = (settings["first_day_of_week"] as? Double)?.toInt()
                 if (firstDay != null && firstDay in 1..7) {
                     settingsViewModel.setFirstDayOfWeek(DayOfWeek.of(firstDay))
-                    binding.spinnerFirstDay.setSelection(firstDay - 1)
+                    binding.textFirstDayValue.text =
+                            DayOfWeek.of(firstDay)
+                                    .getDisplayName(TextStyle.FULL, Locale.getDefault())
                 }
             }
             // Restore streaks
@@ -350,17 +327,14 @@ class SettingsFragment : Fragment() {
 
     private fun observeSettings() {
         viewLifecycleOwner.lifecycleScope.launch {
-            settingsViewModel.theme.collectLatest { theme ->
+            settingsViewModel.theme.filterNotNull().collectLatest { theme ->
                 val pos =
                         when (theme) {
                             "light" -> 1
                             "dark" -> 2
                             else -> 0
                         }
-                if (binding.spinnerTheme.selectedItemPosition != pos) {
-                    binding.spinnerTheme.setSelection(pos)
-                }
-                applyTheme(theme)
+                binding.textThemeValue.text = themeOptions[pos]
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
@@ -368,6 +342,19 @@ class SettingsFragment : Fragment() {
                 if (binding.switchEnableNotifications.isChecked != enabled) {
                     binding.switchEnableNotifications.isChecked = enabled
                 }
+            }
+        }
+        // Only user toggles write to the store; programmatic syncs detach the
+        // listener first so the stored value can't echo back and flip the switch
+        val weekGraphListener =
+                android.widget.CompoundButton.OnCheckedChangeListener { _, isChecked ->
+                    settingsViewModel.setShowWeekGraph(isChecked)
+                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            settingsViewModel.showWeekGraph.filterNotNull().collectLatest { show ->
+                binding.switchShowWeekGraph.setOnCheckedChangeListener(null)
+                binding.switchShowWeekGraph.isChecked = show
+                binding.switchShowWeekGraph.setOnCheckedChangeListener(weekGraphListener)
             }
         }
     }

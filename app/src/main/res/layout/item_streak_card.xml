@@ -1,29 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="@color/card_surface"
+    app:cardCornerRadius="16dp"
     app:cardElevation="2dp"
+    app:strokeColor="@color/gray_medium"
+    app:strokeWidth="1dp"
+    app:rippleColor="@color/gray_medium"
     android:clickable="true"
     android:focusable="true"
-    android:stateListAnimator="@animator/card_press"
-    android:foreground="?android:attr/selectableItemBackground">
+    android:stateListAnimator="@animator/card_press">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Emoji Icon -->
+        <!-- Emoji chip (background tinted with the streak's color in the adapter) -->
         <TextView
             android:id="@+id/emoji_icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:gravity="center"
             android:text="🏃"
-            android:textSize="32sp"
+            android:textSize="24sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
@@ -95,4 +99,4 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

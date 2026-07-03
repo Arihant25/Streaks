@@ -25,6 +25,9 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -102,6 +105,26 @@ class HomeFragment : Fragment() {
     ): View {
         homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+
+        // The hero bleeds behind the status bar (edge-to-edge); push its
+        // content down by the status bar height so the title never overlaps
+        val heroBasePadding = binding.heroHeader.paddingTop
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.heroHeader) {
+                view,
+                insets ->
+            val statusBar =
+                    insets.getInsets(
+                                    androidx.core.view.WindowInsetsCompat.Type.statusBars()
+                            )
+                            .top
+            view.setPadding(
+                    view.paddingLeft,
+                    heroBasePadding + statusBar,
+                    view.paddingRight,
+                    view.paddingBottom
+            )
+            insets
+        }
 
         setupRecyclerView()
         observeStreaks()
@@ -337,9 +360,73 @@ class HomeFragment : Fragment() {
             binding.emptyState.isVisible = streaks.isEmpty()
             binding.recyclerStreaks.isVisible = streaks.isNotEmpty()
             binding.fabAddStreak.isVisible = streaks.isEmpty()
+            applyWeekPulseVisibility(streaks.isNotEmpty() && showWeekGraph)
 
-            if (streaks.isNotEmpty()) maybeShowSwipeHint()
+            if (streaks.isNotEmpty()) {
+                updateWeekPulse(streaks)
+                maybeShowSwipeHint()
+            }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            settingsViewModel.showWeekGraph.filterNotNull().collect { show ->
+                showWeekGraph = show
+                applyWeekPulseVisibility(show && !homeViewModel.streaks.value.isNullOrEmpty())
+            }
+        }
+    }
+
+    private var showWeekGraph = true
+
+    // Without the chart the hero keeps chart-sized bottom padding and looks
+    // tall and empty, so tighten it into a normal app-bar height
+    private fun applyWeekPulseVisibility(visible: Boolean) {
+        binding.weekPulse.isVisible = visible
+        val bottomPadding =
+                ((if (visible) 20 else 12) * resources.displayMetrics.density).toInt()
+        binding.heroHeader.setPadding(
+                binding.heroHeader.paddingLeft,
+                binding.heroHeader.paddingTop,
+                binding.heroHeader.paddingRight,
+                bottomPadding
+        )
+    }
+
+    // Hero card: total completions this week + one colored pill per
+    // completion per day, wave-animated only on first show
+    private var weekPulseAnimated = false
+
+    private fun updateWeekPulse(streaks: List<Streak>) {
+        val today = java.time.LocalDate.now()
+        var weekStart = today
+        while (weekStart.dayOfWeek != com.arihant.streaks.utils.WeekConfig.firstDayOfWeek) {
+            weekStart = weekStart.minusDays(1)
+        }
+
+        val completionsByStreak =
+                streaks.map { parseStreakColor(it) to it.asLocalDateCompletions().toSet() }
+
+        val days =
+                (0L..6L).map { offset ->
+                    val day = weekStart.plusDays(offset)
+                    val colors =
+                            completionsByStreak.mapNotNull { (color, dates) ->
+                                color.takeIf { day in dates }
+                            }
+                    com.arihant.streaks.ui.views.WeekPulseView.Day(
+                            label =
+                                    day.dayOfWeek.getDisplayName(
+                                            java.time.format.TextStyle.NARROW,
+                                            java.util.Locale.getDefault()
+                                    ),
+                            colors = colors,
+                            isToday = day == today,
+                            isFuture = day.isAfter(today)
+                    )
+                }
+
+        binding.weekPulse.setData(days, animate = !weekPulseAnimated)
+        weekPulseAnimated = true
     }
 
     private fun tutorialPrefs() =

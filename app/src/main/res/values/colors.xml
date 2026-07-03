@@ -17,4 +17,7 @@
     <color name="neon_pink">#FF55BB</color>
     <color name="neon_cyan">#A3D8FF</color>
     <color name="widget_background">#FFFFFF</color>
+    <color name="screen_background">#FFF6F6F7</color>
+    <color name="card_surface">#FFFFFFFF</color>
+    <color name="nav_indicator">#1FFF6B35</color>
 </resources>

@@ -157,7 +157,6 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                                 else buildGridViews(context, streaks, columns, showNames)
                     }
             appWidgetManager.updateAppWidget(appWidgetId, views)
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
         }
 
         private fun buildGridViews(
@@ -224,12 +223,21 @@ class StreaksWidgetProvider : AppWidgetProvider() {
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_streaks_list)
 
-            val serviceIntent =
-                    Intent(context, StreaksWidgetService::class.java).apply {
-                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                        data = Uri.parse("streaks://widget/list/$appWidgetId")
-                    }
-            views.setRemoteAdapter(R.id.widget_list, serviceIntent)
+            // Items are built inline (RemoteCollectionItems) instead of going through
+            // the deprecated RemoteViewsService round trip
+            val items =
+                    RemoteViews.RemoteCollectionItems.Builder()
+                            .setHasStableIds(true)
+                            .apply {
+                                streaks.forEach { streak ->
+                                    addItem(
+                                            streak.id.hashCode().toLong(),
+                                            buildListItem(context, streak)
+                                    )
+                                }
+                            }
+                            .build()
+            views.setRemoteAdapter(R.id.widget_list, items)
             views.setEmptyView(R.id.widget_list, R.id.widget_empty)
 
             // Rows fill in the streak id; the template must be mutable to accept it
@@ -248,6 +256,45 @@ class StreaksWidgetProvider : AppWidgetProvider() {
             )
 
             views.setOnClickPendingIntent(R.id.widget_empty, openAppIntent(context))
+            return views
+        }
+
+        private fun buildListItem(context: Context, streak: Streak): RemoteViews {
+            val views = RemoteViews(context.packageName, R.layout.widget_streak_list_item)
+
+            views.setTextViewText(R.id.item_emoji, streak.emoji)
+            views.setTextViewText(R.id.item_name, streak.name)
+            val unit = getUnitLabel(streak.frequency, streak.currentStreak)
+            views.setTextViewText(
+                    R.id.item_streak,
+                    context.getString(
+                            R.string.widget_streak_summary,
+                            streak.currentStreak,
+                            unit,
+                            streak.bestStreak
+                    )
+            )
+
+            val color = parseStreakColor(streak.color)
+            if (streak.isCompletedToday) {
+                views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_check)
+                views.setInt(R.id.item_check, "setColorFilter", color)
+            } else {
+                views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_circle)
+                views.setInt(R.id.item_check, "setColorFilter", context.getColor(R.color.gray_dark))
+            }
+            views.setTextColor(
+                    R.id.item_name,
+                    if (streak.isCompletedToday) color else context.getColor(R.color.black)
+            )
+
+            // Fills in the pending intent template set on the ListView by the provider
+            val fillIn =
+                    Intent().apply {
+                        putExtra(EXTRA_STREAK_ID, streak.id)
+                        data = Uri.parse("streaks://widget/toggle/${streak.id}")
+                    }
+            views.setOnClickFillInIntent(R.id.widget_item_root, fillIn)
             return views
         }
 

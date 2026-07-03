@@ -29,8 +29,45 @@ class StreaksAdapter(
                         onClicked: (Streak, View) -> Unit
                 ) {
                         val context = binding.root.context
+                        val color =
+                                try {
+                                        android.graphics.Color.parseColor(streak.color)
+                                } catch (e: Exception) {
+                                        android.graphics.Color.parseColor("#FF9900")
+                                }
+
                         binding.emojiIcon.text = streak.emoji
+                        // Emoji chip tinted with the streak's own color
+                        binding.emojiIcon.background =
+                                android.graphics.drawable.GradientDrawable().apply {
+                                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                                        setColor(
+                                                androidx.core.graphics.ColorUtils
+                                                        .setAlphaComponent(color, 38)
+                                        )
+                                }
                         binding.streakName.text = streak.name
+
+                        // Completed cards get a soft wash + stroke of their accent color
+                        val surface = ContextCompat.getColor(context, R.color.card_surface)
+                        if (streak.isCompletedToday) {
+                                binding.root.setCardBackgroundColor(
+                                        androidx.core.graphics.ColorUtils.compositeColors(
+                                                androidx.core.graphics.ColorUtils
+                                                        .setAlphaComponent(color, 22),
+                                                surface
+                                        )
+                                )
+                                binding.root.strokeColor =
+                                        androidx.core.graphics.ColorUtils.setAlphaComponent(
+                                                color,
+                                                110
+                                        )
+                        } else {
+                                binding.root.setCardBackgroundColor(surface)
+                                binding.root.strokeColor =
+                                        ContextCompat.getColor(context, R.color.gray_medium)
+                        }
 
                         if (streak.currentStreak == 0) {
                                 binding.streakCount.text =
@@ -95,12 +132,6 @@ class StreaksAdapter(
                         binding.completionCircle.isSelected = streak.isCompletedToday
                         binding.checkIcon.isVisible = streak.isCompletedToday
                         // Tint the completion circle and check icon with streak color
-                        val color =
-                                try {
-                                        android.graphics.Color.parseColor(streak.color)
-                                } catch (e: Exception) {
-                                        android.graphics.Color.parseColor("#FF9900")
-                                }
                         if (streak.isCompletedToday) {
                                 val drawable = android.graphics.drawable.GradientDrawable()
                                 drawable.shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -172,6 +203,27 @@ class StreaksAdapter(
                                         binding.completionCircle
                                 )
                         }
+                        // Expand the completion circle's touch target to the full right side of
+                        // the card: 48 dp to the left, and the full height (top/bottom padding
+                        // gaps included), so any tap on the right portion marks the streak.
+                        val circleParent = binding.completionCircle.parent as android.view.View
+                        circleParent.post {
+                                val touchRect = android.graphics.Rect()
+                                binding.completionCircle.getHitRect(touchRect)
+                                val extraPx =
+                                        (48 * binding.root.context.resources.displayMetrics.density)
+                                                .toInt()
+                                touchRect.left = maxOf(0, touchRect.left - extraPx)
+                                touchRect.right = circleParent.width
+                                touchRect.top = 0
+                                touchRect.bottom = circleParent.height
+                                circleParent.touchDelegate =
+                                        android.view.TouchDelegate(
+                                                touchRect,
+                                                binding.completionCircle
+                                        )
+                        }
+
                         // Add click listener for the whole card
                         binding.root.setOnClickListener { onClicked(streak, binding.root) }
 
