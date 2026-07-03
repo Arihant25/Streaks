@@ -184,11 +184,14 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                             getUnitLabel(streak.frequency, streak.currentStreak)
                     )
                     val streakColor = parseStreakColor(streak.color)
-                    views.setTextColor(
-                            COUNT_IDS[i],
-                            if (streak.isCompletedToday) streakColor
-                            else context.getColor(R.color.black)
-                    )
+                    if (streak.isCompletedToday) {
+                        views.setTextColor(COUNT_IDS[i], streakColor)
+                    } else {
+                        // Resolved in the launcher process so it follows the system
+                        // theme like the widget background; context.getColor here
+                        // would apply the in-app theme override instead
+                        views.setColor(COUNT_IDS[i], "setTextColor", R.color.black)
+                    }
                     // Explicit done-today badge: the count alone can't show it,
                     // e.g. a twice-a-week streak marked on day 1 doesn't advance
                     if (streak.isCompletedToday) {
@@ -281,12 +284,15 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                 views.setInt(R.id.item_check, "setColorFilter", color)
             } else {
                 views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_circle)
-                views.setInt(R.id.item_check, "setColorFilter", context.getColor(R.color.gray_dark))
+                views.setColor(R.id.item_check, "setColorFilter", R.color.gray_dark)
             }
-            views.setTextColor(
-                    R.id.item_name,
-                    if (streak.isCompletedToday) color else context.getColor(R.color.black)
-            )
+            if (streak.isCompletedToday) {
+                views.setTextColor(R.id.item_name, color)
+            } else {
+                // Launcher-side resource resolution keeps text readable when the
+                // in-app theme disagrees with the system theme
+                views.setColor(R.id.item_name, "setTextColor", R.color.black)
+            }
 
             // Fills in the pending intent template set on the ListView by the provider
             val fillIn =

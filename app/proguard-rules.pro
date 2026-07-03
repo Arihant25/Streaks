@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Gson deserializes streak data reflectively; renaming or stripping these
+# classes would silently null out saved streak fields on load
+-keep class com.arihant.streaks.data.** { *; }
+
+# Gson resolves List<StreakExportDto> etc. through generic signatures and
+# TypeToken subclasses; R8 full mode strips both without these
+-keepattributes Signature
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
