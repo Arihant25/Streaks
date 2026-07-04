@@ -45,7 +45,7 @@ Streaks is an Android application designed to help users build and maintain posi
 
 ## Privacy & Data Security
 
-- **100% Local Storage**: All your habit data is stored exclusively on your device using Room database
+- **100% Local Storage**: All your habit data is stored exclusively on your device in a local JSON file
 - **No Internet Required**: The app works completely offline - no network permissions needed
 - **No Data Collection**: We don't collect, store, or transmit any personal information
 - **No Ads or Tracking**: Clean experience without advertisements or user tracking
@@ -65,13 +65,13 @@ Streaks is an Android application designed to help users build and maintain posi
 - Material Design Components
 - Navigation Component
 - ViewModel and LiveData
-- Room Database (for local data storage)
+- Gson (JSON serialization for local data storage)
 
 ### Architecture
 
 The app follows MVVM (Model-View-ViewModel) architecture pattern:
 
-- **Model**: Data classes and database entities
+- **Model**: Data classes and the JSON-backed repository
 - **View**: Activities and Fragments
 - **ViewModel**: Business logic and data management
 
