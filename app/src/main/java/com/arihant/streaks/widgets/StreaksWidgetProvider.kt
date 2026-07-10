@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import com.arihant.streaks.MainActivity
@@ -21,13 +22,36 @@ class StreaksWidgetProvider : AppWidgetProvider() {
         const val EXTRA_STREAK_ID = "streak_id"
 
         private const val MAX_COLUMNS = 8
-        // Approximate dp per grid column; kept tight so wide one-row widgets
-        // pack in as many streaks as fit
-        private const val COLUMN_WIDTH_DP = 45
+        // Approximate dp per grid column. Wide enough for "months" under a
+        // 3-digit count; anything tighter clips the unit label.
+        private const val COLUMN_WIDTH_DP = 48
         // Tall enough to fit the streak name under each column
         private const val NAMED_GRID_HEIGHT_DP = 100
         // From this height on, AUTO mode switches to the scrollable list
         private const val LIST_HEIGHT_DP = 160
+
+        /**
+         * Density steps for the grid. The column stacks emoji + count + unit (+ name), which
+         * needs ~80dp; squeezed below that the content used to spill over the rounded
+         * background, so text scales down and the unit row drops out on short widgets.
+         */
+        private enum class GridDensity(
+                val minHeightDp: Int,
+                val emojiSp: Float,
+                val countSp: Float,
+                val showUnit: Boolean
+        ) {
+            TINY(0, 18f, 13f, showUnit = false),
+            COMPACT(64, 24f, 14f, showUnit = false),
+            REGULAR(80, 30f, 16f, showUnit = true),
+            NAMED(NAMED_GRID_HEIGHT_DP, 30f, 18f, showUnit = true);
+
+            companion object {
+                fun forHeight(heightDp: Int): GridDensity =
+                        if (heightDp <= 0) REGULAR // launcher didn't report a size
+                        else entries.last { heightDp >= it.minHeightDp }
+            }
+        }
 
         private val COLUMN_IDS =
                 intArrayOf(
@@ -145,16 +169,16 @@ class StreaksWidgetProvider : AppWidgetProvider() {
             val columns =
                     if (widthDp <= 0) 4
                     else (widthDp / COLUMN_WIDTH_DP).coerceIn(1, MAX_COLUMNS)
-            val showNames = heightDp >= NAMED_GRID_HEIGHT_DP
+            val density = GridDensity.forHeight(heightDp)
             val views =
                     when (config.mode) {
                         WidgetPrefs.Mode.LIST -> buildListViews(context, appWidgetId, streaks)
                         WidgetPrefs.Mode.GRID ->
-                                buildGridViews(context, streaks, columns, showNames)
+                                buildGridViews(context, streaks, columns, density)
                         WidgetPrefs.Mode.AUTO ->
                                 if (heightDp >= LIST_HEIGHT_DP)
                                         buildListViews(context, appWidgetId, streaks)
-                                else buildGridViews(context, streaks, columns, showNames)
+                                else buildGridViews(context, streaks, columns, density)
                     }
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
@@ -163,7 +187,7 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                 context: Context,
                 streaks: List<Streak>,
                 columns: Int,
-                showNames: Boolean
+                density: GridDensity
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_streaks)
             val visibleCount = minOf(columns, streaks.size, MAX_COLUMNS)
@@ -178,13 +202,30 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                     val streak = streaks[i]
                     views.setViewVisibility(COLUMN_IDS[i], View.VISIBLE)
                     views.setTextViewText(ICON_IDS[i], streak.emoji)
-                    views.setTextViewText(COUNT_IDS[i], streak.currentStreak.toString())
-                    views.setTextViewText(
-                            UNIT_IDS[i],
-                            getUnitLabel(streak.frequency, streak.currentStreak)
+                    views.setTextViewTextSize(
+                            ICON_IDS[i], TypedValue.COMPLEX_UNIT_SP, density.emojiSp
                     )
+                    views.setTextViewText(COUNT_IDS[i], streak.currentStreak.toString())
+                    views.setTextViewTextSize(
+                            COUNT_IDS[i], TypedValue.COMPLEX_UNIT_SP, density.countSp
+                    )
+                    if (density.showUnit) {
+                        views.setViewVisibility(UNIT_IDS[i], View.VISIBLE)
+                        views.setTextViewText(
+                                UNIT_IDS[i],
+                                getUnitLabel(streak.frequency, streak.currentStreak)
+                        )
+                    } else {
+                        views.setViewVisibility(UNIT_IDS[i], View.GONE)
+                    }
+
+                    // Negative habits invert the highlight: the streak is "on" while the
+                    // day is still clean, and a slip-up today mutes the column instead.
                     val streakColor = parseStreakColor(streak.color)
-                    if (streak.isCompletedToday) {
+                    val highlighted =
+                            if (streak.isNegative) !streak.isCompletedToday
+                            else streak.isCompletedToday
+                    if (highlighted) {
                         views.setTextColor(COUNT_IDS[i], streakColor)
                     } else {
                         // Resolved in the launcher process so it follows the system
@@ -192,15 +233,32 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                         // would apply the in-app theme override instead
                         views.setColor(COUNT_IDS[i], "setTextColor", R.color.black)
                     }
-                    // Explicit done-today badge: the count alone can't show it,
-                    // e.g. a twice-a-week streak marked on day 1 doesn't advance
-                    if (streak.isCompletedToday) {
-                        views.setViewVisibility(CHECK_IDS[i], View.VISIBLE)
-                        views.setInt(CHECK_IDS[i], "setColorFilter", streakColor)
-                    } else {
-                        views.setViewVisibility(CHECK_IDS[i], View.GONE)
+
+                    // Status badge. Positive: an accent check once done today. Negative:
+                    // an accent check while clean, a gray cross after a slip-up.
+                    // TINY columns have no room for it — the emoji itself is barely bigger.
+                    when {
+                        density == GridDensity.TINY ->
+                                views.setViewVisibility(CHECK_IDS[i], View.GONE)
+                        streak.isNegative && streak.isCompletedToday -> {
+                            views.setViewVisibility(CHECK_IDS[i], View.VISIBLE)
+                            views.setImageViewResource(CHECK_IDS[i], R.drawable.ic_slip_24)
+                            views.setColor(CHECK_IDS[i], "setColorFilter", R.color.gray_dark)
+                        }
+                        streak.isNegative -> {
+                            views.setViewVisibility(CHECK_IDS[i], View.VISIBLE)
+                            views.setImageViewResource(CHECK_IDS[i], R.drawable.ic_widget_check)
+                            views.setInt(CHECK_IDS[i], "setColorFilter", streakColor)
+                        }
+                        streak.isCompletedToday -> {
+                            views.setViewVisibility(CHECK_IDS[i], View.VISIBLE)
+                            views.setImageViewResource(CHECK_IDS[i], R.drawable.ic_widget_check)
+                            views.setInt(CHECK_IDS[i], "setColorFilter", streakColor)
+                        }
+                        else -> views.setViewVisibility(CHECK_IDS[i], View.GONE)
                     }
-                    if (showNames) {
+
+                    if (density == GridDensity.NAMED) {
                         views.setViewVisibility(NAME_IDS[i], View.VISIBLE)
                         views.setTextViewText(NAME_IDS[i], streak.name)
                     } else {
@@ -271,22 +329,37 @@ class StreaksWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(
                     R.id.item_streak,
                     context.getString(
-                            R.string.widget_streak_summary,
+                            if (streak.isNegative) R.string.widget_streak_summary_negative
+                            else R.string.widget_streak_summary,
                             streak.currentStreak,
                             unit,
                             streak.bestStreak
                     )
             )
 
+            // Negative habits invert the highlight: accent while clean, muted after a slip
             val color = parseStreakColor(streak.color)
-            if (streak.isCompletedToday) {
-                views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_check)
-                views.setInt(R.id.item_check, "setColorFilter", color)
-            } else {
-                views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_circle)
-                views.setColor(R.id.item_check, "setColorFilter", R.color.gray_dark)
+            when {
+                streak.isNegative && streak.isCompletedToday -> {
+                    views.setImageViewResource(R.id.item_check, R.drawable.ic_slip_24)
+                    views.setColor(R.id.item_check, "setColorFilter", R.color.gray_dark)
+                }
+                streak.isNegative -> {
+                    views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_check)
+                    views.setInt(R.id.item_check, "setColorFilter", color)
+                }
+                streak.isCompletedToday -> {
+                    views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_check)
+                    views.setInt(R.id.item_check, "setColorFilter", color)
+                }
+                else -> {
+                    views.setImageViewResource(R.id.item_check, R.drawable.ic_widget_circle)
+                    views.setColor(R.id.item_check, "setColorFilter", R.color.gray_dark)
+                }
             }
-            if (streak.isCompletedToday) {
+            val highlighted =
+                    if (streak.isNegative) !streak.isCompletedToday else streak.isCompletedToday
+            if (highlighted) {
                 views.setTextColor(R.id.item_name, color)
             } else {
                 // Launcher-side resource resolution keeps text readable when the
