@@ -72,7 +72,7 @@ class StreakDetailsFragment : Fragment() {
                 binding.textEmoji.text = streak.emoji
                 binding.textName.text = streak.name
                 binding.textFrequency.text =
-                        formatFrequency(streak.frequency, streak.frequencyCount)
+                        formatFrequency(streak.frequency, streak.frequencyCount, streak.isNegative)
 
                 setupStreakStatsLayout(binding, streak)
 
@@ -104,38 +104,33 @@ class StreakDetailsFragment : Fragment() {
                 binding.cardReminder.setOnClickListener { showReminderDialog(binding) }
 
                 // --- Edit card ---
+                // Fragment Result API: survives configuration changes, unlike callbacks
+                parentFragmentManager.setFragmentResultListener(
+                        AddStreakDialog.RESULT_KEY_EDIT,
+                        viewLifecycleOwner
+                ) { _, bundle ->
+                        val result = AddStreakDialog.parseResult(bundle)
+                        homeViewModel.updateStreakDetails(
+                                streak.id,
+                                result.name,
+                                result.emoji,
+                                result.color,
+                                result.frequency,
+                                result.frequencyCount,
+                                requireContext()
+                        )
+                        Toast.makeText(requireContext(), "Streak updated", Toast.LENGTH_SHORT)
+                                .show()
+                        binding.textName.text = result.name
+                        binding.textEmoji.text = result.emoji
+                        binding.textFrequency.text =
+                                formatFrequency(result.frequency, result.frequencyCount, streak.isNegative)
+                }
                 binding.cardEdit.setOnClickListener {
-                        val dialog =
-                                AddStreakDialog(
-                                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
-                                                homeViewModel.updateStreakDetails(
-                                                        streak.id,
-                                                        name,
-                                                        emoji,
-                                                        color,
-                                                        frequency,
-                                                        frequencyCount,
-                                                        requireContext()
-                                                )
-                                                Toast.makeText(
-                                                                requireContext(),
-                                                                "Streak updated",
-                                                                Toast.LENGTH_SHORT
-                                                        )
-                                                        .show()
-                                                binding.textName.text = name
-                                                binding.textEmoji.text = emoji
-                                                binding.textFrequency.text =
-                                                        formatFrequency(frequency, frequencyCount)
-                                        },
-                                        isEditMode = true,
-                                        initialFrequency = streak.frequency,
-                                        initialFrequencyCount = streak.frequencyCount,
-                                        initialName = streak.name,
-                                        initialEmoji = streak.emoji,
-                                        initialColor = streak.color
-                                )
-                        dialog.show(parentFragmentManager, "EditStreakDialog")
+                        val current =
+                                homeViewModel.streaks.value?.find { it.id == streak.id } ?: streak
+                        AddStreakDialog.newForEdit(current)
+                                .show(parentFragmentManager, "EditStreakDialog")
                 }
 
                 // --- Delete card ---
@@ -553,8 +548,21 @@ class StreakDetailsFragment : Fragment() {
 
         private fun formatFrequency(
                 frequency: com.arihant.streaks.data.FrequencyType,
-                count: Int
+                count: Int,
+                isNegative: Boolean = false
         ): String {
+                if (isNegative) {
+                        if (count == 0) return "Quit habit · zero tolerance"
+                        val period =
+                                when (frequency) {
+                                        com.arihant.streaks.data.FrequencyType.DAILY -> "day"
+                                        com.arihant.streaks.data.FrequencyType.WEEKLY -> "week"
+                                        com.arihant.streaks.data.FrequencyType.MONTHLY -> "month"
+                                        com.arihant.streaks.data.FrequencyType.YEARLY -> "year"
+                                }
+                        val slips = if (count == 1) "slip-up" else "slip-ups"
+                        return "Quit habit · up to $count $slips a $period"
+                }
                 return when (frequency) {
                         com.arihant.streaks.data.FrequencyType.DAILY -> "Every day"
                         com.arihant.streaks.data.FrequencyType.WEEKLY ->
@@ -1125,12 +1133,20 @@ class StreakDetailsFragment : Fragment() {
                 return
             }
             val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy"))
-            val title = if (isCurrentlyCompleted) getString(R.string.mark_uncompleted) else getString(R.string.mark_completed)
-            val message = if (isCurrentlyCompleted) {
-                getString(R.string.confirm_mark_uncompleted)
-            } else {
-                getString(R.string.confirm_mark_completed)
-            }
+            val title =
+                    when {
+                        streak.isNegative -> getString(R.string.mark_slip_up)
+                        isCurrentlyCompleted -> getString(R.string.mark_uncompleted)
+                        else -> getString(R.string.mark_completed)
+                    }
+            val message =
+                    when {
+                        streak.isNegative && isCurrentlyCompleted ->
+                                getString(R.string.confirm_remove_slip)
+                        streak.isNegative -> getString(R.string.confirm_mark_slip)
+                        isCurrentlyCompleted -> getString(R.string.confirm_mark_uncompleted)
+                        else -> getString(R.string.confirm_mark_completed)
+                    }
 
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(title)

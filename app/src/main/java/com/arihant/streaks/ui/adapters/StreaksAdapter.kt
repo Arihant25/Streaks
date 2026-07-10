@@ -48,9 +48,14 @@ class StreaksAdapter(
                                 }
                         binding.streakName.text = streak.name
 
-                        // Completed cards get a soft wash + stroke of their accent color
+                        // Completed cards get a soft wash + stroke of their accent color.
+                        // Negative habits invert: the card glows while CLEAN (the streak is
+                        // alive) and goes plain after a slip-up.
+                        val highlighted =
+                                if (streak.isNegative) !streak.isCompletedToday
+                                else streak.isCompletedToday
                         val surface = ContextCompat.getColor(context, R.color.card_surface)
-                        if (streak.isCompletedToday) {
+                        if (highlighted) {
                                 binding.root.setCardBackgroundColor(
                                         androidx.core.graphics.ColorUtils.compositeColors(
                                                 androidx.core.graphics.ColorUtils
@@ -71,7 +76,36 @@ class StreaksAdapter(
 
                         if (streak.currentStreak == 0) {
                                 binding.streakCount.text =
-                                        context.getString(R.string.streak_not_started)
+                                        context.getString(
+                                                if (streak.isNegative)
+                                                        R.string.streak_broken_restarts
+                                                else R.string.streak_not_started
+                                        )
+                                binding.streakCount.setTextColor(
+                                        ContextCompat.getColor(
+                                                context,
+                                                if (streak.isNegative) R.color.orange_dark
+                                                else R.color.gray_dark
+                                        )
+                                )
+                        } else if (streak.isNegative) {
+                                // "12 days clean" — negative streaks have no risk states,
+                                // they simply grow until a slip-up breaks them
+                                val plural =
+                                        when (streak.frequency) {
+                                                FrequencyType.DAILY -> R.plurals.streak_days
+                                                FrequencyType.WEEKLY -> R.plurals.streak_weeks
+                                                FrequencyType.MONTHLY -> R.plurals.streak_months
+                                                FrequencyType.YEARLY -> R.plurals.streak_years
+                                        }
+                                val unit =
+                                        context.resources.getQuantityString(
+                                                plural,
+                                                streak.currentStreak,
+                                                streak.currentStreak
+                                        )
+                                binding.streakCount.text =
+                                        context.getString(R.string.streak_clean_format, unit)
                                 binding.streakCount.setTextColor(
                                         ContextCompat.getColor(context, R.color.gray_dark)
                                 )
@@ -130,24 +164,56 @@ class StreaksAdapter(
 
                         // Update completion circle
                         binding.completionCircle.isSelected = streak.isCompletedToday
-                        binding.checkIcon.isVisible = streak.isCompletedToday
-                        // Tint the completion circle and check icon with streak color
-                        if (streak.isCompletedToday) {
-                                val drawable = android.graphics.drawable.GradientDrawable()
-                                drawable.shape = android.graphics.drawable.GradientDrawable.OVAL
-                                drawable.setColor(color)
-                                binding.completionCircle.background = drawable
-                                binding.checkIcon.setColorFilter(android.graphics.Color.WHITE)
-                        } else {
-                                binding.completionCircle.background =
-                                        binding.root.context.getDrawable(
-                                                R.drawable.circle_background
+                        if (streak.isNegative) {
+                                // Clean day: outlined circle with the accent check (today is
+                                // already counted). Slipped: gray fill with a cross; tapping
+                                // again undoes the slip-up.
+                                if (streak.isCompletedToday) {
+                                        binding.checkIcon.setImageResource(R.drawable.ic_slip_24)
+                                        binding.checkIcon.isVisible = true
+                                        val drawable = android.graphics.drawable.GradientDrawable()
+                                        drawable.shape =
+                                                android.graphics.drawable.GradientDrawable.OVAL
+                                        drawable.setColor(
+                                                ContextCompat.getColor(context, R.color.gray_dark)
                                         )
-                                binding.checkIcon.setColorFilter(color)
+                                        binding.completionCircle.background = drawable
+                                        binding.checkIcon.setColorFilter(
+                                                android.graphics.Color.WHITE
+                                        )
+                                } else {
+                                        binding.checkIcon.setImageResource(R.drawable.ic_check_24)
+                                        binding.checkIcon.isVisible = true
+                                        binding.completionCircle.background =
+                                                binding.root.context.getDrawable(
+                                                        R.drawable.circle_background
+                                                )
+                                        binding.checkIcon.setColorFilter(color)
+                                }
+                        } else {
+                                binding.checkIcon.setImageResource(R.drawable.ic_check_24)
+                                binding.checkIcon.isVisible = streak.isCompletedToday
+                                // Tint the completion circle and check icon with streak color
+                                if (streak.isCompletedToday) {
+                                        val drawable = android.graphics.drawable.GradientDrawable()
+                                        drawable.shape =
+                                                android.graphics.drawable.GradientDrawable.OVAL
+                                        drawable.setColor(color)
+                                        binding.completionCircle.background = drawable
+                                        binding.checkIcon.setColorFilter(
+                                                android.graphics.Color.WHITE
+                                        )
+                                } else {
+                                        binding.completionCircle.background =
+                                                binding.root.context.getDrawable(
+                                                        R.drawable.circle_background
+                                                )
+                                        binding.checkIcon.setColorFilter(color)
+                                }
                         }
 
                         binding.completionCircle.setOnClickListener {
-                                if (!streak.isCompletedToday) {
+                                if (!streak.isCompletedToday && !streak.isNegative) {
                                         // Completing: satisfying pop + confirm haptic
                                         binding.completionCircle.performHapticFeedback(
                                                 android.view.HapticFeedbackConstants.CONFIRM

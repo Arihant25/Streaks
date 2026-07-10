@@ -130,6 +130,21 @@ class SettingsFragment : Fragment() {
 
     private fun setupClickListeners() {
         binding.btnAddStreak.setOnClickListener { showAddStreakDialog() }
+        // Fragment Result API: survives configuration changes, unlike constructor callbacks
+        parentFragmentManager.setFragmentResultListener(
+                AddStreakDialog.RESULT_KEY_ADD,
+                viewLifecycleOwner
+        ) { _, bundle ->
+            val result = AddStreakDialog.parseResult(bundle)
+            settingsViewModel.addStreak(
+                    result.name,
+                    result.emoji,
+                    result.frequency,
+                    result.frequencyCount,
+                    result.color,
+                    result.isNegative
+            )
+        }
         binding.textPrivacyPolicy.setOnClickListener {
             openUrl("https://Arihant25.github.io/streaks/privacy-policy.html")
         }
@@ -338,21 +353,8 @@ class SettingsFragment : Fragment() {
 
     private fun showAddStreakDialog() {
         val existingCount = settingsViewModel.streaksLiveData.value?.size ?: 0
-        val dialog =
-                AddStreakDialog(
-                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
-                            settingsViewModel.addStreak(
-                                    name,
-                                    emoji,
-                                    frequency,
-                                    frequencyCount,
-                                    color
-                            )
-                        },
-                        isEditMode = false,
-                        initialEmoji = AddStreakDialog.defaultEmojiFor(existingCount)
-                )
-        dialog.show(parentFragmentManager, "AddStreakDialog")
+        AddStreakDialog.newForAdd(AddStreakDialog.defaultEmojiFor(existingCount))
+                .show(parentFragmentManager, "AddStreakDialog")
     }
 
     private fun setupNotificationChannelButton() {

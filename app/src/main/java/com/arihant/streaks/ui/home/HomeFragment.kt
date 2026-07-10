@@ -132,6 +132,22 @@ class HomeFragment : Fragment() {
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
         binding.emptyState.setOnClickListener { showAddStreakDialog() }
 
+        // Fragment Result API: survives configuration changes, unlike constructor callbacks
+        parentFragmentManager.setFragmentResultListener(
+                AddStreakDialog.RESULT_KEY_ADD,
+                viewLifecycleOwner
+        ) { _, bundle ->
+            val result = AddStreakDialog.parseResult(bundle)
+            settingsViewModel.addStreak(
+                    result.name,
+                    result.emoji,
+                    result.frequency,
+                    result.frequencyCount,
+                    result.color,
+                    result.isNegative
+            )
+        }
+
         // Wait for the list to be laid out so the shared-element return
         // transition can find the card it morphs back into
         postponeEnterTransition()
@@ -142,19 +158,7 @@ class HomeFragment : Fragment() {
 
     private fun showAddStreakDialog() {
         val existingCount = settingsViewModel.streaksLiveData.value?.size ?: 0
-        AddStreakDialog(
-                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
-                            settingsViewModel.addStreak(
-                                    name,
-                                    emoji,
-                                    frequency,
-                                    frequencyCount,
-                                    color
-                            )
-                        },
-                        isEditMode = false,
-                        initialEmoji = AddStreakDialog.defaultEmojiFor(existingCount)
-                )
+        AddStreakDialog.newForAdd(AddStreakDialog.defaultEmojiFor(existingCount))
                 .show(parentFragmentManager, "AddStreakDialog")
     }
 
@@ -162,9 +166,18 @@ class HomeFragment : Fragment() {
         streaksAdapter =
                 StreaksAdapter(
                         onStreakToggled = { streakId, shouldCheck, sourceView ->
+                            val streak =
+                                    homeViewModel.streaks.value?.find { it.id == streakId }
                             if (shouldCheck) {
-                                pendingBurstOrigin = burstOriginFor(sourceView)
-                                homeViewModel.completeStreak(streakId, requireContext())
+                                if (streak?.isNegative == true) {
+                                    // Recording a slip-up is not a celebration — no confetti,
+                                    // but an easy way back for accidental taps
+                                    homeViewModel.completeStreak(streakId, requireContext())
+                                    showSlipUpUndoSnackbar(streakId)
+                                } else {
+                                    pendingBurstOrigin = burstOriginFor(sourceView)
+                                    homeViewModel.completeStreak(streakId, requireContext())
+                                }
                             } else {
                                 homeViewModel.uncompleteStreak(streakId, requireContext())
                             }
@@ -228,6 +241,9 @@ class HomeFragment : Fragment() {
                                 )
                                 if (streak.isCompletedToday) {
                                     homeViewModel.uncompleteStreak(streak.id, requireContext())
+                                } else if (streak.isNegative) {
+                                    homeViewModel.completeStreak(streak.id, requireContext())
+                                    showSlipUpUndoSnackbar(streak.id)
                                 } else {
                                     pendingBurstOrigin = burstOriginFor(viewHolder.itemView)
                                     homeViewModel.completeStreak(streak.id, requireContext())
@@ -545,6 +561,8 @@ class HomeFragment : Fragment() {
         for (streak in newStreaks) {
             val previous = oldById[streak.id] ?: continue
             if (!streak.isCompletedToday || previous.isCompletedToday) continue
+            // A slip-up on a quit-habit is the opposite of a celebration
+            if (streak.isNegative) continue
             burstConfetti(listOf(parseStreakColor(streak)), origin)
 
             val emoji = MILESTONES[streak.currentStreak] ?: continue
@@ -556,6 +574,15 @@ class HomeFragment : Fragment() {
                     .setAction("Share") { shareMilestoneCard(streak) }
                     .show()
         }
+    }
+
+    /** Recording a slip-up is one tap, so give an equally light way to take it back. */
+    private fun showSlipUpUndoSnackbar(streakId: String) {
+        Snackbar.make(binding.root, R.string.slip_up_recorded, Snackbar.LENGTH_LONG)
+                .setAction(R.string.undo) {
+                    homeViewModel.uncompleteStreak(streakId, requireContext())
+                }
+                .show()
     }
 
     private fun countLabel(streak: Streak): String {
