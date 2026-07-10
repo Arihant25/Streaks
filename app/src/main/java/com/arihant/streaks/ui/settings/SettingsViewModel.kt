@@ -1,15 +1,11 @@
 package com.arihant.streaks.ui.settings
 
 import android.app.Application
-import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.arihant.streaks.data.FrequencyType
+import com.arihant.streaks.data.SettingsStore
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.data.StreakExportDto
 import com.arihant.streaks.data.StreakRepository
@@ -20,15 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-private val Context.dataStore by preferencesDataStore(name = "settings")
-
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = StreakRepository.getInstance()
     private val context = getApplication<Application>().applicationContext
-
-    private val THEME_KEY = stringPreferencesKey("theme")
-    private val NOTIFICATIONS_KEY = booleanPreferencesKey("notifications_enabled")
-    private val SHOW_WEEK_GRAPH_KEY = booleanPreferencesKey("show_week_graph")
 
     // null until the stored value loads, so observers never act on a fake default
     private val _theme = MutableStateFlow<String?>(null)
@@ -45,35 +35,37 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[THEME_KEY] ?: "system" }.collect {
-                _theme.value = it
-            }
+            SettingsStore.data(context)
+                    .map { prefs -> prefs[SettingsStore.THEME_KEY] ?: "system" }
+                    .collect { _theme.value = it }
         }
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[NOTIFICATIONS_KEY] ?: false }.collect {
-                _notificationsEnabled.value = it
-            }
+            SettingsStore.data(context)
+                    .map { prefs -> prefs[SettingsStore.NOTIFICATIONS_KEY] ?: false }
+                    .collect { _notificationsEnabled.value = it }
         }
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] ?: true }.collect {
-                _showWeekGraph.value = it
-            }
+            SettingsStore.data(context)
+                    .map { prefs -> prefs[SettingsStore.SHOW_WEEK_GRAPH_KEY] ?: true }
+                    .collect { _showWeekGraph.value = it }
         }
     }
 
     fun setTheme(theme: String) {
-        viewModelScope.launch { context.dataStore.edit { prefs -> prefs[THEME_KEY] = theme } }
+        viewModelScope.launch {
+            SettingsStore.edit(context) { prefs -> prefs[SettingsStore.THEME_KEY] = theme }
+        }
     }
 
     fun setNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            context.dataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
+            SettingsStore.edit(context) { prefs -> prefs[SettingsStore.NOTIFICATIONS_KEY] = enabled }
         }
     }
 
     fun setShowWeekGraph(show: Boolean) {
         viewModelScope.launch {
-            context.dataStore.edit { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] = show }
+            SettingsStore.edit(context) { prefs -> prefs[SettingsStore.SHOW_WEEK_GRAPH_KEY] = show }
         }
     }
 
@@ -88,9 +80,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             emoji: String,
             frequency: FrequencyType,
             frequencyCount: Int,
-            color: String = "#FF9900"
+            color: String = Streak.DEFAULT_COLOR,
+            isNegative: Boolean = false
     ) {
-        repository.addStreak(name, emoji, frequency, frequencyCount, context, color)
+        repository.addStreak(name, emoji, frequency, frequencyCount, context, color, isNegative)
     }
 
     fun getStreaksForExport(): List<Streak> {
@@ -105,22 +98,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         repository.loadStreaksFromFile(context)
     }
 
-    fun getStreaksForExportDto(): List<StreakExportDto> {
-        return (streaksLiveData.value ?: emptyList()).map { streak ->
-            StreakExportDto(
-                    id = streak.id,
-                    name = streak.name,
-                    emoji = streak.emoji,
-                    frequency = streak.frequency,
-                    frequencyCount = streak.frequencyCount,
-                    createdDate = streak.createdDate,
-                    lastCompletedDate = streak.lastCompletedDate,
-                    currentStreak = streak.currentStreak,
-                    bestStreak = streak.bestStreak,
-                    completions = streak.completions,
-                    reminder = streak.reminder,
-                    color = streak.color
-            )
-        }
+    fun refreshIfDayChanged() {
+        repository.refreshIfDayChanged(context)
     }
+
+    /** toDto() keeps every field — including position, frequencyHistory and isNegative. */
+    fun getStreaksForExportDto(): List<StreakExportDto> =
+            (streaksLiveData.value ?: emptyList()).map { it.toDto() }
 }

@@ -92,4 +92,31 @@
     <string name="which_days">Which days?</string>
     <string name="decrease">Decrease</string>
     <string name="increase">Increase</string>
+
+    <!-- Notifications -->
+    <string name="reminder_notification_text">Time to work on your streak!</string>
+    <string name="mark_as_done">Mark as done</string>
+    <string name="checkin_notification_text">Did you do it today? If not, your streak keeps growing.</string>
+    <string name="checkin_slipped">Yes, I slipped</string>
+    <string name="checkin_clean">No, all clean</string>
+
+    <!-- Negative habits (anti-streaks) -->
+    <string name="habit_type_build">Build</string>
+    <string name="habit_type_quit">Quit</string>
+    <string name="habit_type_label">Habit type</string>
+    <string name="habit_type_hint_build">Do it regularly — the streak grows when you check it off.</string>
+    <string name="habit_type_hint_quit">Avoid it — the streak grows by itself and marking a slip-up breaks it.</string>
+    <string name="allowed_slips">Allowed slip-ups</string>
+    <string name="slips_per_week">slip-ups per week allowed</string>
+    <string name="slips_per_month">slip-ups per month allowed</string>
+    <string name="slips_per_year">slip-ups per year allowed</string>
+    <string name="zero_tolerance_daily">Zero tolerance: any slip-up resets the streak</string>
+    <string name="slip_up_recorded">Slip-up recorded</string>
+    <string name="undo">Undo</string>
+    <string name="streak_deleted">Streak deleted</string>
+    <string name="clean_suffix">clean</string>
+    <string name="mark_slip_up">Mark slip-up</string>
+    <string name="confirm_mark_slip">Record a slip-up for this day?</string>
+    <string name="confirm_remove_slip">Remove the slip-up for this day?</string>
+    <string name="load_data_failed">Couldn\'t read saved data. A backup of the damaged file was kept.</string>
 </resources>

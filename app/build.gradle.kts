@@ -19,8 +19,8 @@ android {
         applicationId = "com.arihant.streaks"
         minSdk = 31
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.2"
+        versionCode = 9
+        versionName = "2.3"
     }
 
     signingConfigs {
@@ -64,10 +64,10 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.datastore:datastore-preferences:1.1.0")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.transition)
-    implementation("com.google.android.material:material:1.11.0")
     implementation("nl.dionsegijn:konfetti-xml:2.0.4")
+
+    testImplementation(libs.junit)
 }

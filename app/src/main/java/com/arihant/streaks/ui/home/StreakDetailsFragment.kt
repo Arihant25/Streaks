@@ -1,11 +1,8 @@
 package com.arihant.streaks.ui.home
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -14,8 +11,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -26,7 +21,7 @@ import com.arihant.streaks.data.Reminder
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.databinding.FragmentStreakDetailsBinding
 import com.arihant.streaks.ui.dialogs.AddStreakDialog
-import com.arihant.streaks.utils.NotificationScheduler
+import com.arihant.streaks.notifications.ReminderScheduler
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 
@@ -34,7 +29,7 @@ class StreakDetailsFragment : Fragment() {
         private val args: StreakDetailsFragmentArgs by navArgs()
         private val homeViewModel: HomeViewModel by activityViewModels()
         private var reminder: Reminder? = null // In-memory for now
-        private lateinit var notificationScheduler: NotificationScheduler
+        private lateinit var notificationScheduler: ReminderScheduler
         
         // Track the currently displayed month for calendar navigation
         private var currentDisplayMonth: java.time.LocalDate = java.time.LocalDate.now().withDayOfMonth(1)
@@ -72,7 +67,7 @@ class StreakDetailsFragment : Fragment() {
         ): View? {
                 val streak = args.streak
                 val binding = FragmentStreakDetailsBinding.inflate(inflater, container, false)
-                notificationScheduler = NotificationScheduler(requireContext())
+                notificationScheduler = ReminderScheduler(requireContext())
 
                 binding.textEmoji.text = streak.emoji
                 binding.textName.text = streak.name
@@ -157,7 +152,7 @@ class StreakDetailsFragment : Fragment() {
                                                 )
                                                 .show()
                                         requireActivity().onBackPressedDispatcher.onBackPressed()
-                                        notificationScheduler.cancelReminder(streak.id)
+                                        notificationScheduler.cancel(streak.id)
                                 }
                                 .setNegativeButton("Cancel", null)
                                 .show()
@@ -1317,11 +1312,7 @@ class StreakDetailsFragment : Fragment() {
                         this.reminder = updatedStreak?.reminder
                         updateReminderSummary(binding)
                         updatedStreak?.reminder?.let {
-                                notificationScheduler.scheduleReminder(
-                                        args.streak.id,
-                                        args.streak.name,
-                                        it
-                                )
+                                notificationScheduler.scheduleNext(args.streak.id, it)
                         }
                         dialog.dismiss()
                 }
@@ -1332,7 +1323,7 @@ class StreakDetailsFragment : Fragment() {
                         homeViewModel.removeStreakReminder(args.streak.id, requireContext())
                         this.reminder = null
                         updateReminderSummary(binding)
-                        notificationScheduler.cancelReminder(args.streak.id)
+                        notificationScheduler.cancel(args.streak.id)
                         dialog.dismiss()
                 }
 
@@ -1393,20 +1384,6 @@ class StreakDetailsFragment : Fragment() {
         companion object {
                 const val ARG_STREAK = "streak"
                 private const val PREF_CALENDAR_TOOLTIP_SHOWN = "calendar_tooltip_shown"
-
-                fun scheduleReminderAlarm(
-                        context: Context,
-                        streakId: String,
-                        streakName: String,
-                        reminder: Reminder?
-                ) {
-                        val scheduler = NotificationScheduler(context)
-                        if (reminder != null) {
-                                scheduler.scheduleReminder(streakId, streakName, reminder)
-                        } else {
-                                scheduler.cancelReminder(streakId)
-                        }
-                }
         }
 
         // Helper function to resolve color from theme attribute
@@ -1418,78 +1395,3 @@ class StreakDetailsFragment : Fragment() {
         }
 }
 
-class ReminderReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-                try {
-                        // Check if this is from the old alarm system - handle for backward
-                        // compatibility
-                        val reminderDay = intent.getIntExtra("reminderDay", -1)
-                        if (reminderDay != -1) {
-                                val today =
-                                        (java.time.LocalDate.now().dayOfWeek.value + 6) %
-                                                7 // 0=Mon, 6=Sun
-                                if (today != reminderDay) return // Not the right day
-                        }
-
-                        // Create notification channel if needed (Android 8+)
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                val channel =
-                                        android.app.NotificationChannel(
-                                                        "streak_reminder_channel",
-                                                        "Streak Reminders",
-                                                        android.app.NotificationManager
-                                                                .IMPORTANCE_HIGH
-                                                )
-                                                .apply {
-                                                        description =
-                                                                "Notifications for streak reminders"
-                                                        enableVibration(true)
-                                                        enableLights(true)
-                                                }
-                                val manager =
-                                        context.getSystemService(Context.NOTIFICATION_SERVICE) as
-                                                android.app.NotificationManager
-                                manager.createNotificationChannel(channel)
-                        }
-
-                        // Check notification permission before showing notification
-                        if (android.os.Build.VERSION.SDK_INT >=
-                                        android.os.Build.VERSION_CODES.TIRAMISU
-                        ) {
-                                val permissionGranted =
-                                        context.checkSelfPermission(
-                                                android.Manifest.permission.POST_NOTIFICATIONS
-                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (!permissionGranted) return
-                        }
-
-                        val reminderText =
-                                intent.getStringExtra("reminderText")
-                                        ?: "Time to work on your streak!"
-                        val builder =
-                                NotificationCompat.Builder(context, "streak_reminder_channel")
-                                        .setSmallIcon(
-                                                com.arihant.streaks.R.drawable.ic_notification_24
-                                        )
-                                        .setContentTitle("Streak Reminder")
-                                        .setContentText(reminderText)
-                                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                        .setAutoCancel(true)
-                                        .setVibrate(longArrayOf(0, 250, 250, 250))
-                                        .setCategory(NotificationCompat.CATEGORY_REMINDER)
-
-                        val notificationManager =
-                                androidx.core.app.NotificationManagerCompat.from(context)
-                        try {
-                                notificationManager.notify(
-                                        System.currentTimeMillis().toInt(),
-                                        builder.build()
-                                )
-                        } catch (e: SecurityException) {
-                                // Permission denied, ignore silently
-                        }
-                } catch (e: Exception) {
-                        // Handle any unexpected errors gracefully
-                }
-        }
-}

@@ -161,13 +161,11 @@ class SettingsFragment : Fragment() {
                     }
                 }
 
-                // Check exact alarm permission
+                // Check exact alarm permission (reminders still fire without it, just less
+                // punctually — battery-optimization exemptions are no longer needed at all)
                 if (!PermissionHelper.checkExactAlarmPermission(requireContext())) {
                     PermissionHelper.requestExactAlarmPermission(this)
                 }
-
-                // Check battery optimization
-                PermissionHelper.checkAndRequestBatteryOptimization(this)
             }
             settingsViewModel.setNotificationEnabled(isChecked)
         }
@@ -273,26 +271,9 @@ class SettingsFragment : Fragment() {
                     Gson().fromJson(streaksJson, streakExportListType)
             if (streakExportList.isNullOrEmpty())
                     throw Exception("No streaks found or wrong format")
-            val streaks =
-                    streakExportList.map { dto ->
-                        val todayStr = java.time.LocalDate.now().toString()
-                        val isCompletedToday = dto.lastCompletedDate == todayStr
-                        Streak(
-                                id = dto.id,
-                                name = dto.name,
-                                emoji = dto.emoji,
-                                frequency = dto.frequency,
-                                frequencyCount = dto.frequencyCount,
-                                createdDate = dto.createdDate,
-                                lastCompletedDate = dto.lastCompletedDate,
-                                currentStreak = dto.currentStreak,
-                                bestStreak = dto.bestStreak,
-                                isCompletedToday = isCompletedToday,
-                                completions = dto.completions ?: emptyList(),
-                                reminder = dto.reminder,
-                                color = dto.color ?: "#FF9900"
-                        )
-                    }
+            // toStreak() keeps every field — including position, frequencyHistory and
+            // isNegative — and setStreaksFromImport recalculates the derived counters
+            val streaks = streakExportList.map { it.toStreak() }
 
             // Restore settings
             settingsMap?.let { settings ->
@@ -312,13 +293,9 @@ class SettingsFragment : Fragment() {
             }
             // Restore streaks
             settingsViewModel.setStreaksFromImport(streaks)
-            // Schedule reminders for imported streaks using new NotificationScheduler
-            val scheduler = com.arihant.streaks.utils.NotificationScheduler(requireContext())
-            streaks.forEach { streak ->
-                streak.reminder?.let { reminder ->
-                    scheduler.scheduleReminder(streak.id, streak.name, reminder)
-                }
-            }
+            // Schedule reminders for imported streaks
+            com.arihant.streaks.notifications.ReminderScheduler(requireContext())
+                    .rescheduleAll(streaks)
             Toast.makeText(requireContext(), R.string.import_success, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(requireContext(), R.string.import_failed, Toast.LENGTH_SHORT).show()

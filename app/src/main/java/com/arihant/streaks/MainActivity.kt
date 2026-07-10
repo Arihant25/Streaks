@@ -68,6 +68,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Roll counters and "done today" flags over when the app survived midnight —
+        // negative habits literally grow a day here
+        settingsViewModel.refreshIfDayChanged()
+    }
+
     private fun setSelectedTab(index: Int) {
         val tabWidth = 100f * resources.displayMetrics.density
         binding.navIndicator
