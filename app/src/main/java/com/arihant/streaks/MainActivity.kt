@@ -23,8 +23,14 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Load streaks from persistent storage
-        settingsViewModel.loadStreaksFromFile()
+        // Make sure streaks are in memory (no-op when the Application already loaded them —
+        // a re-read here could race the async save and resurrect stale on-disk state)
+        settingsViewModel.ensureLoaded()
+        if (settingsViewModel.lastLoadFailed()) {
+            com.google.android.material.snackbar.Snackbar
+                    .make(binding.root, R.string.load_data_failed, 6000)
+                    .show()
+        }
 
         // Apply the saved theme on launch (previously only applied when opening Settings)
         lifecycleScope.launch {

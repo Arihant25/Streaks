@@ -63,7 +63,7 @@ class CompleteStreakReceiver : BroadcastReceiver() {
             ACTION_MARK_DONE -> {
                 // The app process may be dead, so hydrate the repository from disk first
                 val repository = StreakRepository.getInstance()
-                repository.loadStreaksFromFile(context)
+                repository.ensureLoaded(context)
                 repository.completeStreak(streakId, context)
                 NotificationManagerCompat.from(context).cancel(notificationId)
             }

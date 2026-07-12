@@ -21,7 +21,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
         // The app process may be dead, so hydrate the repository from disk first
         val repository = StreakRepository.getInstance()
-        repository.loadStreaksFromFile(context)
+        repository.ensureLoaded(context)
 
         val streak = repository.streaks.value?.find { it.id == streakId } ?: return
         val reminder = streak.reminder ?: return

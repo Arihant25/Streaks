@@ -31,31 +31,42 @@ class StreakRepository {
     private val ioExecutor = Executors.newSingleThreadExecutor()
 
     @Volatile private var lastComputedDate: LocalDate = LocalDate.now()
+    @Volatile private var loaded = false
     @Volatile var lastLoadFailed = false
         private set
 
-    fun loadStreaksFromFile(context: Context) {
+    /**
+     * Loads from disk exactly once per process; afterwards the in-memory LiveData is the
+     * single source of truth. Widgets and receivers MUST use this instead of re-reading the
+     * file: saves are asynchronous, so a re-read right after a mutation can resurrect the
+     * previous on-disk state and visibly "undo" a tap until the next refresh.
+     */
+    fun ensureLoaded(context: Context) {
+        if (loaded) return
         // Week boundaries in the recalculation below depend on the configured start day
         WeekConfig.init(context)
         val file = AtomicFile(File(context.filesDir, fileName))
-        val loaded: List<Streak> =
+        val restored: List<Streak> =
                 try {
                     val json = String(file.readFully(), Charsets.UTF_8)
                     val type = object : TypeToken<List<StreakExportDto>>() {}.type
                     val exportList: List<StreakExportDto> = gson.fromJson(json, type) ?: emptyList()
                     exportList.map { it.toStreak() }
                 } catch (e: FileNotFoundException) {
+                    loaded = true // nothing saved yet — the empty state is correct
                     return
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to load streaks, keeping a copy of the corrupt file", e)
                     lastLoadFailed = true
                     backupCorruptFile(File(context.filesDir, fileName))
+                    loaded = true // retrying would only overwrite the .corrupt backup
                     return
                 }
         // Recalculate so streaks broken since the last launch don't show stale counts
         lastComputedDate = LocalDate.now()
         _streaks.value =
-                loaded.map { recalculated(it, it.completions) }.sortedBy { it.position }
+                restored.map { recalculated(it, it.completions) }.sortedBy { it.position }
+        loaded = true
     }
 
     private fun backupCorruptFile(base: File) {

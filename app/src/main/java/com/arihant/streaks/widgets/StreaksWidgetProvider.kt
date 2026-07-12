@@ -143,7 +143,7 @@ class StreaksWidgetProvider : AppWidgetProvider() {
         ) {
             val config = WidgetPrefs.load(context, appWidgetId)
             val repository = StreakRepository.getInstance()
-            repository.loadStreaksFromFile(context)
+            repository.ensureLoaded(context)
             val streaks =
                     config.filter(repository.streaks.value ?: emptyList()).sortedBy { it.position }
 
@@ -407,7 +407,7 @@ class StreaksWidgetProvider : AppWidgetProvider() {
             if (streakId != null) {
                 // The app process may be dead, so hydrate from disk first
                 val repository = StreakRepository.getInstance()
-                repository.loadStreaksFromFile(context)
+                repository.ensureLoaded(context)
                 val streak = repository.streaks.value?.find { it.id == streakId }
                 if (streak != null) {
                     // completeStreak/uncompleteStreak save and re-trigger a widget update
@@ -415,6 +415,10 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                         repository.uncompleteStreak(streakId, context)
                     } else {
                         repository.completeStreak(streakId, context)
+                        // A reminder for this streak may be sitting in the shade — it's
+                        // answered now
+                        com.arihant.streaks.notifications.Notifications
+                                .cancelReminder(context, streakId)
                     }
                 }
             }

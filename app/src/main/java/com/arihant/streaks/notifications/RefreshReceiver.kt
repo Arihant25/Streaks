@@ -34,7 +34,7 @@ class RefreshReceiver : BroadcastReceiver() {
 
     private fun refresh(context: Context) {
         val repository = StreakRepository.getInstance()
-        repository.loadStreaksFromFile(context)
+        repository.ensureLoaded(context)
         repository.recalculateAllStreaks(context)
         ReminderScheduler(context).rescheduleAll(repository.streaks.value ?: emptyList())
         scheduleNextDailyRefresh(context)

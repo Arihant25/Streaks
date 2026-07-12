@@ -86,17 +86,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         repository.addStreak(name, emoji, frequency, frequencyCount, context, color, isNegative)
     }
 
-    fun getStreaksForExport(): List<Streak> {
-        return streaksLiveData.value ?: emptyList()
-    }
-
     fun setStreaksFromImport(streaks: List<Streak>) {
         repository.setStreaksFromImport(streaks, context)
     }
 
-    fun loadStreaksFromFile() {
-        repository.loadStreaksFromFile(context)
+    fun ensureLoaded() {
+        repository.ensureLoaded(context)
     }
+
+    /** True when the last cold-start load found an unreadable data file. */
+    fun lastLoadFailed(): Boolean = repository.lastLoadFailed
 
     fun refreshIfDayChanged() {
         repository.refreshIfDayChanged(context)

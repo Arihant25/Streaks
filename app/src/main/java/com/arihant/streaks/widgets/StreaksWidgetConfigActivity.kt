@@ -46,7 +46,7 @@ class StreaksWidgetConfigActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val repository = StreakRepository.getInstance()
-        repository.loadStreaksFromFile(this)
+        repository.ensureLoaded(this)
         val streaks = (repository.streaks.value ?: emptyList()).sortedBy { it.position }
         val config = WidgetPrefs.load(this, appWidgetId)
 

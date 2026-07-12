@@ -16,7 +16,7 @@ class StreaksApp : Application() {
         // process start a self-healing point: reload data, re-arm one alarm per reminder and
         // the after-midnight refresh that rolls streak counters (and the widget) over.
         val repository = StreakRepository.getInstance()
-        repository.loadStreaksFromFile(this)
+        repository.ensureLoaded(this)
         ReminderScheduler(this).rescheduleAll(repository.streaks.value ?: emptyList())
         RefreshReceiver.scheduleNextDailyRefresh(this)
     }
