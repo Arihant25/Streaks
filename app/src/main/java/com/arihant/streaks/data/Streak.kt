@@ -46,8 +46,6 @@ data class Streak(
          */
         val isNegative: Boolean = false
 ) : Parcelable {
-        fun getCreatedDate(): LocalDate = LocalDate.parse(createdDate)
-        fun getLastCompletedDate(): LocalDate? = lastCompletedDate?.let { LocalDate.parse(it) }
         fun asLocalDateCompletions(): List<LocalDate> = completions.map { LocalDate.parse(it) }
 
         fun toDto(): StreakExportDto =

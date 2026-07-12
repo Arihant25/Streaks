@@ -15,10 +15,6 @@ class HomeViewModel : ViewModel() {
         repository.completeStreak(streakId, context)
     }
 
-    fun recalculateAllStreaks(context: android.content.Context) {
-        repository.recalculateAllStreaks(context)
-    }
-
     fun uncompleteStreak(streakId: String, context: android.content.Context) {
         repository.uncompleteStreak(streakId, context)
     }

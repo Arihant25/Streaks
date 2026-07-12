@@ -693,12 +693,9 @@ class HomeFragment : Fragment() {
         return bitmap
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Recompute streaks so ones broken while the app sat in memory
-        // (e.g. overnight) update without needing a completion to be marked
-        homeViewModel.recalculateAllStreaks(requireContext())
-    }
+    // Streaks broken while the app sat in memory (e.g. overnight) are refreshed by
+    // MainActivity.onResume via refreshIfDayChanged() — a cheap no-op within the same day,
+    // unlike the full recalc+save+widget-update that used to run on every resume here.
 
     override fun onDestroyView() {
         super.onDestroyView()

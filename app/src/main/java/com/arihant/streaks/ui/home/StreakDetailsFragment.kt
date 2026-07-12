@@ -148,6 +148,9 @@ class StreakDetailsFragment : Fragment() {
                                                 .show()
                                         requireActivity().onBackPressedDispatcher.onBackPressed()
                                         notificationScheduler.cancel(streak.id)
+                                        // Also clear any reminder already sitting in the shade
+                                        com.arihant.streaks.notifications.Notifications
+                                                .cancelReminder(requireContext(), streak.id)
                                 }
                                 .setNegativeButton("Cancel", null)
                                 .show()

@@ -1,7 +1,5 @@
 package com.arihant.streaks.ui.settings
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,8 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
@@ -367,60 +363,12 @@ class SettingsFragment : Fragment() {
         binding.btnTestNotification.setOnClickListener { sendTestNotification() }
     }
     private fun sendTestNotification() {
-        // Create notification channel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                    NotificationChannel(
-                                    "streak_reminder_channel",
-                                    "Streak Reminders",
-                                    NotificationManager.IMPORTANCE_HIGH
-                            )
-                            .apply {
-                                description = "Notifications for streak reminders"
-                                enableVibration(true)
-                                enableLights(true)
-                            }
-            val notificationManager =
-                    requireContext().getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        // Check notification permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionGranted =
-                    requireContext()
-                            .checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
-                            android.content.pm.PackageManager.PERMISSION_GRANTED
-            if (!permissionGranted) {
-                Toast.makeText(
-                                requireContext(),
-                                "Notification permission required",
-                                Toast.LENGTH_SHORT
-                        )
-                        .show()
-                return
-            }
-        }
-
-        val notification =
-                NotificationCompat.Builder(requireContext(), "streak_reminder_channel")
-                        .setSmallIcon(com.arihant.streaks.R.drawable.ic_notification_24)
-                        .setContentTitle("Test Notification")
-                        .setContentText(
-                                "This is a test notification to verify that notifications are working!"
-                        )
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setAutoCancel(true)
-                        .setVibrate(longArrayOf(0, 250, 250, 250))
-                        .setCategory(NotificationCompat.CATEGORY_REMINDER)
-                        .build()
-
-        try {
-            val notificationManager = NotificationManagerCompat.from(requireContext())
-            notificationManager.notify(12345, notification)
+        // Channel creation and permission checks live in the shared helper
+        if (com.arihant.streaks.notifications.Notifications.canPost(requireContext())) {
+            com.arihant.streaks.notifications.Notifications.showTest(requireContext())
             Toast.makeText(requireContext(), "Test notification sent!", Toast.LENGTH_SHORT).show()
-        } catch (e: SecurityException) {
-            Toast.makeText(requireContext(), "Notification permission denied", Toast.LENGTH_SHORT)
+        } else {
+            Toast.makeText(requireContext(), "Notification permission required", Toast.LENGTH_SHORT)
                     .show()
         }
     }

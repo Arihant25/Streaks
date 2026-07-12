@@ -4,7 +4,7 @@
     <string name="title_settings">Settings</string>
     <string name="title_notifications">Notifications</string>
     <string name="enable_notifications">Enable Notifications</string>
-    <string name="notification_settings_info">For reliable notifications, please allow exact alarms and disable battery optimization when prompted.</string>
+    <string name="notification_settings_info">Reminders use exact alarms when allowed. For on-time delivery, allow "Alarms &amp; reminders" when prompted.</string>
     <string name="notification_channel_settings">Notification Channel Settings</string>
     <string name="test_notification">Test</string>
     <string name="add_new_streak">Add New Streak</string>
@@ -107,18 +107,14 @@
     <string name="habit_type_label">Habit type</string>
     <string name="habit_type_hint_build">Do it regularly — the streak grows when you check it off.</string>
     <string name="habit_type_hint_quit">Avoid it — the streak grows by itself and marking a slip-up breaks it.</string>
-    <string name="allowed_slips">Allowed slip-ups</string>
     <string name="slips_per_day">slip-ups per day allowed</string>
     <string name="slips_per_week">slip-ups per week allowed</string>
     <string name="slips_per_month">slip-ups per month allowed</string>
     <string name="slips_per_year">slip-ups per year allowed</string>
-    <string name="zero_tolerance_daily">Zero tolerance: any slip-up resets the streak</string>
     <string name="slip_up_recorded">Slip-up recorded</string>
     <string name="streak_clean_format">%s clean</string>
     <string name="streak_broken_restarts">Slipped — back on track tomorrow</string>
     <string name="undo">Undo</string>
-    <string name="streak_deleted">Streak deleted</string>
-    <string name="clean_suffix">clean</string>
     <string name="mark_slip_up">Mark slip-up</string>
     <string name="confirm_mark_slip">Record a slip-up for this day?</string>
     <string name="confirm_remove_slip">Remove the slip-up for this day?</string>
