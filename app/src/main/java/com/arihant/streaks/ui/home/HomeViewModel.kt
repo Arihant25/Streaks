@@ -66,4 +66,12 @@ class HomeViewModel : ViewModel() {
     ) {
         repository.toggleStreakCompletionForDate(streakId, date, context)
     }
+
+    fun toggleFreeze(
+            streakId: String,
+            date: java.time.LocalDate,
+            context: android.content.Context
+    ) {
+        repository.toggleFreezeForDate(streakId, date, context)
+    }
 }

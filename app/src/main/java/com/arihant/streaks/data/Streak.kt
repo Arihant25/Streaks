@@ -44,9 +44,19 @@ data class Streak(
          * is marked, and [frequencyCount] is the number of allowed slip-ups per period
          * (usually 0). [isCompletedToday] then means "slipped today".
          */
-        val isNegative: Boolean = false
+        val isNegative: Boolean = false,
+        /**
+         * Dates (ISO) the user froze — sick days, travel, a bad back. A frozen period bridges
+         * the chain like a Duolingo streak freeze: the streak survives but doesn't grow.
+         * Freezes are earned by consistency (see [StreakCalculator]); [freezesAvailable] is
+         * derived on every recalculation and stored only so the UI and widget can show it.
+         */
+        val freezes: List<String> = emptyList(),
+        val freezesAvailable: Int = 0
 ) : Parcelable {
         fun asLocalDateCompletions(): List<LocalDate> = completions.map { LocalDate.parse(it) }
+
+        fun isFrozenOn(date: LocalDate): Boolean = freezes.contains(date.toString())
 
         fun toDto(): StreakExportDto =
                 StreakExportDto(
@@ -64,7 +74,8 @@ data class Streak(
                         color = color,
                         position = position,
                         frequencyHistory = frequencyHistory,
-                        isNegative = isNegative
+                        isNegative = isNegative,
+                        freezes = freezes
                 )
 
         companion object {
@@ -95,7 +106,8 @@ data class StreakExportDto(
         val color: String = Streak.DEFAULT_COLOR,
         val position: Int = Int.MAX_VALUE,
         val frequencyHistory: List<FrequencyChange>? = null, // nullable for backwards compat
-        val isNegative: Boolean = false
+        val isNegative: Boolean = false,
+        val freezes: List<String>? = null // nullable for backwards compat
 ) {
         /** Gson can leave non-null fields null when the JSON omits them, hence the fallbacks. */
         @Suppress("USELESS_ELVIS", "SENSELESS_COMPARISON")
@@ -116,6 +128,7 @@ data class StreakExportDto(
                         color = color ?: Streak.DEFAULT_COLOR,
                         position = position,
                         frequencyHistory = frequencyHistory ?: emptyList(),
-                        isNegative = isNegative
+                        isNegative = isNegative,
+                        freezes = freezes ?: emptyList() // freezesAvailable is re-derived
                 )
 }

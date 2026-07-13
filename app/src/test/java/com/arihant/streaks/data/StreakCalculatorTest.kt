@@ -15,7 +15,8 @@ class StreakCalculatorTest {
         createdDate: String = "2025-01-01",
         completions: List<String> = emptyList(),
         frequencyHistory: List<FrequencyChange> = emptyList(),
-        isNegative: Boolean = false
+        isNegative: Boolean = false,
+        freezes: List<String> = emptyList()
     ) = Streak(
         id = "test",
         name = "Test",
@@ -26,7 +27,8 @@ class StreakCalculatorTest {
         lastCompletedDate = null,
         completions = completions,
         frequencyHistory = frequencyHistory,
-        isNegative = isNegative
+        isNegative = isNegative,
+        freezes = freezes
     )
 
     private fun recalc(
@@ -352,6 +354,129 @@ class StreakCalculatorTest {
                 enough, DayOfWeek.MONDAY, LocalDate.parse("2025-06-12")
             )
         )
+    }
+
+    // ── Streak freezes ────────────────────────────────────────────────────────
+
+    private fun dailyRun(from: String, days: Int): List<String> {
+        val start = LocalDate.parse(from)
+        return (0 until days).map { start.plusDays(it.toLong()).toString() }
+    }
+
+    @Test
+    fun `freezes are earned every ten valid periods`() {
+        // 25 consecutive daily completions → 2 freezes earned, none spent
+        val completions = dailyRun("2025-05-01", 25)
+        val result = recalc(
+            streak(completions = completions),
+            today = "2025-05-25"
+        )
+        assertEquals(2, result.freezesAvailable)
+
+        val nine = recalc(
+            streak(completions = dailyRun("2025-06-01", 9)),
+            today = "2025-06-09"
+        )
+        assertEquals(0, nine.freezesAvailable) // nine valid periods is not enough yet
+    }
+
+    @Test
+    fun `a frozen missed day bridges the chain without counting`() {
+        // 10 days done, Jun 11 missed but frozen, Jun 12 done
+        val completions = dailyRun("2025-06-01", 10) + "2025-06-12"
+        val base = streak(completions = completions)
+        val broken = recalc(base, today = "2025-06-12")
+        assertEquals(1, broken.currentStreak) // without the freeze the chain restarts
+
+        val frozen = recalc(
+            base.copy(freezes = listOf("2025-06-11")),
+            today = "2025-06-12"
+        )
+        assertEquals(11, frozen.currentStreak) // 10 + bridge + 1; frozen day adds nothing
+        assertEquals(0, frozen.freezesAvailable) // earned 1 for 10 days, spent it
+    }
+
+    @Test
+    fun `freeze on a completed period is not spent`() {
+        val completions = dailyRun("2025-06-01", 10)
+        val result = recalc(
+            streak(completions = completions, freezes = listOf("2025-06-05")),
+            today = "2025-06-10"
+        )
+        assertEquals(10, result.currentStreak)
+        assertEquals(1, result.freezesAvailable) // the freeze was never needed
+    }
+
+    @Test
+    fun `at most two consecutive periods can be saved by freezes`() {
+        // 20 days done (2 freezes earned), then Jun 21-23 missed and all three frozen
+        val completions = dailyRun("2025-06-01", 20) + "2025-06-24"
+        val result = recalc(
+            streak(
+                completions = completions,
+                freezes = listOf("2025-06-21", "2025-06-22", "2025-06-23")
+            ),
+            today = "2025-06-24"
+        )
+        // The third frozen day is not saved → the chain breaks there anyway
+        assertEquals(1, result.currentStreak)
+        assertEquals(20, result.bestStreak)
+        // ...and the wasted third freeze is not spent: 2 earned, 2 spent
+        assertEquals(0, result.freezesAvailable)
+    }
+
+    @Test
+    fun `freezing today pauses the running period`() {
+        val completions = dailyRun("2025-06-01", 10)
+        val result = recalc(
+            streak(completions = completions, freezes = listOf("2025-06-11")),
+            today = "2025-06-11"
+        )
+        assertEquals(10, result.currentStreak) // alive, paused, not grown
+        assertEquals(0, result.freezesAvailable) // 1 earned, 1 spent on today
+    }
+
+    @Test
+    fun `unfreezing restores the unspent freeze`() {
+        val completions = dailyRun("2025-06-01", 10)
+        val frozen = streak(completions = completions, freezes = listOf("2025-06-11"))
+        val unfrozen = StreakCalculator.recalculate(
+            frozen.copy(freezes = emptyList()), completions,
+            DayOfWeek.MONDAY, LocalDate.parse("2025-06-11")
+        )
+        assertEquals(1, unfrozen.freezesAvailable)
+    }
+
+    @Test
+    fun `future-dated freezes are ignored`() {
+        val completions = dailyRun("2025-06-01", 10)
+        val result = recalc(
+            streak(completions = completions, freezes = listOf("2025-06-20")),
+            today = "2025-06-10"
+        )
+        assertEquals(10, result.currentStreak)
+        assertEquals(1, result.freezesAvailable)
+    }
+
+    @Test
+    fun `freezing on credit does not save the period`() {
+        // Only 5 valid days — no freeze earned yet, so the frozen miss still breaks the chain
+        val completions = dailyRun("2025-06-01", 5) + "2025-06-07"
+        val result = recalc(
+            streak(completions = completions, freezes = listOf("2025-06-06")),
+            today = "2025-06-07"
+        )
+        assertEquals(1, result.currentStreak)
+        assertEquals(0, result.freezesAvailable)
+    }
+
+    @Test
+    fun `negative habits have no freezes`() {
+        val result = recalc(
+            streak(createdDate = "2025-06-01", isNegative = true, frequencyCount = 0),
+            today = "2025-06-20"
+        )
+        assertEquals(0, result.freezesAvailable)
     }
 
     // ── Negative habits (anti-streaks) ────────────────────────────────────────

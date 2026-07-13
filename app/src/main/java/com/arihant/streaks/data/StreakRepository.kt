@@ -205,6 +205,31 @@ class StreakRepository {
     }
 
     /**
+     * Freezes or unfreezes a date. Whether the freeze actually saves the period (budget,
+     * consecutive limit, period already completed) is decided by the derived math in
+     * [StreakCalculator] — the UI gates the obvious cases, the calculator is the authority.
+     */
+    fun toggleFreezeForDate(streakId: String, date: LocalDate, context: Context? = null) {
+        val currentStreaks = _streaks.value?.toMutableList() ?: return
+        val index = currentStreaks.indexOfFirst { it.id == streakId }
+        if (index != -1) {
+            val streak = currentStreaks[index]
+            if (streak.isNegative) return // freezes are a positive-habit concept
+            val dateStr = date.format(formatter)
+            val newFreezes =
+                    if (streak.freezes.contains(dateStr)) streak.freezes.filter { it != dateStr }
+                    else streak.freezes + dateStr
+            currentStreaks[index] =
+                    recalculated(streak.copy(freezes = newFreezes), streak.completions)
+            _streaks.value = currentStreaks
+            context?.let {
+                saveStreaksToFile(it)
+                updateWidget(it)
+            }
+        }
+    }
+
+    /**
      * Recalculates all streaks from their completion data.
      * Useful for fixing data inconsistencies or after app updates.
      */

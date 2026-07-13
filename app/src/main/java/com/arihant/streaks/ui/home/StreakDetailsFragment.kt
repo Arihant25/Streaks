@@ -103,6 +103,15 @@ class StreakDetailsFragment : Fragment() {
                 addPressAnimation(binding.cardDelete)
                 binding.cardReminder.setOnClickListener { showReminderDialog(binding) }
 
+                // --- Freeze card (build-habits only: a quit-habit grows by itself) ---
+                if (streak.isNegative) {
+                        binding.cardFreeze.visibility = View.GONE
+                } else {
+                        addPressAnimation(binding.cardFreeze)
+                        updateFreezeCard(binding, streak)
+                        binding.cardFreeze.setOnClickListener { onFreezeCardTapped(streak.id) }
+                }
+
                 // --- Edit card ---
                 // Fragment Result API: survives configuration changes, unlike callbacks
                 parentFragmentManager.setFragmentResultListener(
@@ -170,6 +179,7 @@ class StreakDetailsFragment : Fragment() {
                         )
                         refreshMonthlyView(binding, updated)
                         renderQuickStats(binding, updated)
+                        if (!updated.isNegative) updateFreezeCard(binding, updated)
                 }
 
                 return binding.root
@@ -957,6 +967,7 @@ class StreakDetailsFragment : Fragment() {
                                         val date = displayDate.withDayOfMonth(dayNum)
                                         val isCompleted = completions.contains(date)
                                         val isToday = date == now
+                                        val isFrozen = !isCompleted && streak.isFrozenOn(date)
 
                                         val dayTv = android.widget.TextView(context)
                                         dayTv.text = dayNum.toString()
@@ -974,6 +985,7 @@ class StreakDetailsFragment : Fragment() {
                                                                                 .attr
                                                                                 .colorOnSurface
                                                                 )
+                                                        isFrozen -> FREEZE_COLOR
                                                         isToday ->
                                                                 resolveThemeColor(
                                                                         context,
@@ -1013,6 +1025,21 @@ class StreakDetailsFragment : Fragment() {
                                                         val drawable = GradientDrawable()
                                                         drawable.shape = GradientDrawable.OVAL
                                                         drawable.setColor(streakColor)
+                                                        dayTv.background = drawable
+                                                }
+                                                isFrozen -> {
+                                                        // Frozen day: icy outline so a pause
+                                                        // reads differently from a completion
+                                                        val drawable = GradientDrawable()
+                                                        drawable.shape = GradientDrawable.OVAL
+                                                        drawable.setColor(
+                                                                androidx.core.graphics.ColorUtils
+                                                                        .setAlphaComponent(
+                                                                                FREEZE_COLOR,
+                                                                                36
+                                                                        )
+                                                        )
+                                                        drawable.setStroke(dpToPx(2), FREEZE_COLOR)
                                                         dayTv.background = drawable
                                                 }
                                                 isToday -> {
@@ -1124,6 +1151,95 @@ class StreakDetailsFragment : Fragment() {
                 anchor.postDelayed({ if (popup.isShowing) popup.dismiss() }, 6000)
         }
 
+        private fun updateFreezeCard(binding: FragmentStreakDetailsBinding, streak: Streak) {
+                val frozenToday = streak.isFrozenOn(java.time.LocalDate.now())
+                binding.textFreezeSummary.text =
+                        if (frozenToday) {
+                                getString(R.string.freeze_applied) + " · " +
+                                        getString(
+                                                R.string.freeze_summary,
+                                                streak.freezesAvailable,
+                                                com.arihant.streaks.data.StreakCalculator
+                                                        .FREEZE_EARN_EVERY
+                                        )
+                        } else {
+                                getString(
+                                        R.string.freeze_summary,
+                                        streak.freezesAvailable,
+                                        com.arihant.streaks.data.StreakCalculator.FREEZE_EARN_EVERY
+                                )
+                        }
+        }
+
+        private fun onFreezeCardTapped(streakId: String) {
+                val current = homeViewModel.streaks.value?.find { it.id == streakId } ?: return
+                val today = java.time.LocalDate.now()
+                when {
+                        current.isFrozenOn(today) -> {
+                                MaterialAlertDialogBuilder(requireContext())
+                                        .setTitle(getString(R.string.unfreeze_today))
+                                        .setMessage(getString(R.string.confirm_unfreeze_today))
+                                        .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                                                homeViewModel.toggleFreeze(
+                                                        streakId,
+                                                        today,
+                                                        requireContext()
+                                                )
+                                        }
+                                        .setNegativeButton(getString(R.string.no), null)
+                                        .show()
+                        }
+                        current.isCompletedToday ->
+                                Toast.makeText(
+                                                requireContext(),
+                                                getString(R.string.freeze_not_needed),
+                                                Toast.LENGTH_SHORT
+                                        )
+                                        .show()
+                        current.freezesAvailable <= 0 ->
+                                Toast.makeText(
+                                                requireContext(),
+                                                getString(
+                                                        R.string.freeze_none_left,
+                                                        com.arihant.streaks.data.StreakCalculator
+                                                                .FREEZE_EARN_EVERY
+                                                ),
+                                                Toast.LENGTH_LONG
+                                        )
+                                        .show()
+                        else -> {
+                                MaterialAlertDialogBuilder(requireContext())
+                                        .setTitle(getString(R.string.freeze_today))
+                                        .setMessage(
+                                                getString(R.string.confirm_freeze_today) + "\n\n" +
+                                                        getString(
+                                                                R.string.freeze_limit_note,
+                                                                com.arihant.streaks.data
+                                                                        .StreakCalculator
+                                                                        .MAX_CONSECUTIVE_FROZEN
+                                                        )
+                                        )
+                                        .setPositiveButton(getString(R.string.freeze_this_day)) {
+                                                _,
+                                                _ ->
+                                                homeViewModel.toggleFreeze(
+                                                        streakId,
+                                                        today,
+                                                        requireContext()
+                                                )
+                                                Toast.makeText(
+                                                                requireContext(),
+                                                                R.string.freeze_applied,
+                                                                Toast.LENGTH_SHORT
+                                                        )
+                                                        .show()
+                                        }
+                                        .setNegativeButton(getString(R.string.cancel), null)
+                                        .show()
+                        }
+                }
+        }
+
         private fun showDateToggleConfirmation(
             date: java.time.LocalDate,
             isCurrentlyCompleted: Boolean,
@@ -1151,14 +1267,42 @@ class StreakDetailsFragment : Fragment() {
                         else -> getString(R.string.confirm_mark_completed)
                     }
 
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(title)
-                .setMessage("$message\n$dateStr")
-                .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                    toggleDateCompletion(date, isCurrentlyCompleted, streak, binding)
+            val dialog =
+                    MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(title)
+                            .setMessage("$message\n$dateStr")
+                            .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                                toggleDateCompletion(date, isCurrentlyCompleted, streak, binding)
+                            }
+                            .setNegativeButton(getString(R.string.no), null)
+
+            // Missed days on a build-habit can be saved with a freeze (sick days, travel).
+            // The calculator is the authority on whether it actually helps — here we only
+            // gate the obvious cases so the button isn't misleading.
+            if (!streak.isNegative && !isCurrentlyCompleted) {
+                val current =
+                        homeViewModel.streaks.value?.find { it.id == streak.id } ?: streak
+                val frozen = current.isFrozenOn(date)
+                if (frozen || current.freezesAvailable > 0) {
+                    dialog.setNeutralButton(
+                            getString(
+                                    if (frozen) R.string.unfreeze_this_day
+                                    else R.string.freeze_this_day
+                            )
+                    ) { _, _ ->
+                        homeViewModel.toggleFreeze(streak.id, date, requireContext())
+                        Toast.makeText(
+                                        requireContext(),
+                                        if (frozen) R.string.freeze_removed
+                                        else R.string.freeze_applied,
+                                        Toast.LENGTH_SHORT
+                                )
+                                .show()
+                    }
                 }
-                .setNegativeButton(getString(R.string.no), null)
-                .show()
+            }
+
+            dialog.show()
         }
 
         private fun toggleDateCompletion(
@@ -1403,6 +1547,9 @@ class StreakDetailsFragment : Fragment() {
         companion object {
                 const val ARG_STREAK = "streak"
                 private const val PREF_CALENDAR_TOOLTIP_SHOWN = "calendar_tooltip_shown"
+
+                /** Icy blue for frozen days — distinct from any streak accent color. */
+                private const val FREEZE_COLOR = 0xFF4FA8D8.toInt()
         }
 
         // Helper function to resolve color from theme attribute

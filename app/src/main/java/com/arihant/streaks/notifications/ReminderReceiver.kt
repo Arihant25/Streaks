@@ -34,6 +34,8 @@ class ReminderReceiver : BroadcastReceiver() {
             if (streak.isCompletedToday) return // already marked the slip-up today
         } else {
             if (repository.isCurrentPeriodSatisfied(streak)) return
+            // A frozen day is a deliberate pause — don't nag about it
+            if (streak.isFrozenOn(java.time.LocalDate.now())) return
         }
 
         Notifications.showReminder(context, streak)

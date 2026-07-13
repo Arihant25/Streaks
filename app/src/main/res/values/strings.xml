@@ -119,4 +119,20 @@
     <string name="confirm_mark_slip">Record a slip-up for this day?</string>
     <string name="confirm_remove_slip">Remove the slip-up for this day?</string>
     <string name="load_data_failed">Couldn\'t read saved data. A backup of the damaged file was kept.</string>
+
+    <!-- Streak freezes -->
+    <string name="freeze_card_title">Streak freeze</string>
+    <string name="freeze_summary">%1$d available · earn 1 per %2$d completed</string>
+    <string name="freeze_today">Freeze today</string>
+    <string name="unfreeze_today">Unfreeze today</string>
+    <string name="freeze_this_day">Freeze</string>
+    <string name="unfreeze_this_day">Unfreeze</string>
+    <string name="confirm_freeze_today">Pause this streak for today? It will survive without growing. Sick days and travel happen — freezes exist so they don\'t cost you the streak.</string>
+    <string name="confirm_unfreeze_today">Remove today\'s freeze? The day will count as missed unless you complete it.</string>
+    <string name="freeze_not_needed">Already completed today — nothing to freeze</string>
+    <string name="freeze_none_left">No freezes available — every %d completed periods earn one</string>
+    <string name="freeze_applied">Day frozen ❄</string>
+    <string name="freeze_removed">Freeze removed</string>
+    <string name="freeze_limit_note">Freezes can save at most %d periods in a row</string>
+    <string name="frozen_day">Frozen day</string>
 </resources>

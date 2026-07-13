@@ -37,6 +37,15 @@ import java.time.temporal.TemporalAdjusters
  * get a proportionally scaled-down allowance (`floor`), and — unlike positive habits — a failed
  * fragment DOES break the chain: the slips really happened.
  *
+ * ## Streak freezes (positive habits only)
+ *
+ * A frozen period bridges the chain like a neutral fragment: the streak survives a missed
+ * period but doesn't grow. Freezes are earned by consistency — one per [FREEZE_EARN_EVERY]
+ * honestly completed periods over the habit's lifetime — and spent only when they actually
+ * save a missed period (freezing a period that gets completed anyway costs nothing). At most
+ * [MAX_CONSECUTIVE_FROZEN] periods in a row can be saved, so a streak can't idle forever.
+ * The available count is fully derived from history, which keeps recalculation idempotent.
+ *
  * Invariants shared by both:
  * - closed periods are never re-evaluated by later frequency changes (era boundary = change day);
  * - weekly periods follow the configured first day of week, matching the calendar UI.
@@ -137,7 +146,13 @@ object StreakCalculator {
         return Period(start, end, quota, isFragment)
     }
 
-    private enum class Status { VALID, NEUTRAL, FAILED }
+    private enum class Status { VALID, NEUTRAL, FROZEN, FAILED }
+
+    /** One freeze is earned for every this many honestly completed periods. */
+    const val FREEZE_EARN_EVERY = 10
+
+    /** At most this many periods in a row can be saved by freezes. */
+    const val MAX_CONSECUTIVE_FROZEN = 2
 
     /**
      * POSITIVE habits only: true when the requirement for the period containing [today] is
@@ -185,13 +200,21 @@ object StreakCalculator {
     ): Streak {
         val todayStr = today.format(formatter)
 
-        if (normalized.isEmpty()) {
+        // Freezes on future dates can't exist through the UI but could arrive via import;
+        // they must not participate (a key after the running period breaks the anchor scan).
+        val freezeDates =
+            streak.freezes
+                .mapNotNull { runCatching { LocalDate.parse(it, formatter) }.getOrNull() }
+                .filter { !it.isAfter(today) }
+
+        if (normalized.isEmpty() && freezeDates.isEmpty()) {
             return streak.copy(
                 lastCompletedDate = null,
                 currentStreak = 0,
                 bestStreak = 0,
                 isCompletedToday = false,
-                completions = normalized
+                completions = normalized,
+                freezesAvailable = 0
             )
         }
 
@@ -222,31 +245,75 @@ object StreakCalculator {
             }
         }
 
-        fun statusOf(period: Period): Status {
-            val count = counts[period.start] ?: 0
-            return when {
-                count >= period.quota -> Status.VALID
-                period.isFragment -> Status.NEUTRAL
-                else -> Status.FAILED
+        // Frozen periods must exist as keys too — an empty frozen period is the whole point.
+        val frozenStarts = mutableSetOf<LocalDate>()
+        freezeDates.forEach { date ->
+            val period = periodFor(date, eras, firstDayOfWeek, negative = false)
+            frozenStarts.add(period.start)
+            if (period.start !in periods) {
+                periods[period.start] = period
+                counts[period.start] = 0
             }
         }
 
         val ordered = periods.values.toList()
         val runningPeriod = periodFor(today, eras, firstDayOfWeek, negative = false)
 
-        // Best streak: forward scan. Neutral fragments bridge; failed or missed full periods
-        // reset; the running period gets grace until it is over.
+        // Single forward pass resolves every period's status, including the freeze rules:
+        // a freeze turns a missed period into a bridge (FROZEN), but only while at most
+        // MAX_CONSECUTIVE_FROZEN periods in a row are being saved — an endless vacation
+        // still breaks the chain. A freeze on a period that was completed anyway, or one
+        // wasted past the consecutive limit, is NOT spent.
+        val statuses = HashMap<LocalDate, Status>(ordered.size)
+        var totalValid = 0
+        var frozenSpent = 0
+        var consecutiveFrozen = 0
+        var chainEnd: LocalDate? = null
+        for (period in ordered) {
+            if (chainEnd != null && period.start != chainEnd) {
+                consecutiveFrozen = 0 // calendar gap — nothing left to save
+            }
+            val count = counts[period.start] ?: 0
+            val base = when {
+                count >= period.quota -> Status.VALID
+                period.isFragment -> Status.NEUTRAL
+                else -> Status.FAILED
+            }
+            val status =
+                if (base == Status.FAILED &&
+                    period.start in frozenStarts &&
+                    consecutiveFrozen < MAX_CONSECUTIVE_FROZEN &&
+                    // Budget check in chronological order: only freezes already earned by
+                    // this point can be spent — freezing on credit is not a thing
+                    frozenSpent < totalValid / FREEZE_EARN_EVERY
+                ) {
+                    frozenSpent++
+                    consecutiveFrozen++
+                    Status.FROZEN
+                } else {
+                    // A completed or honestly failed period ends the frozen run;
+                    // neutral fragments neither extend nor interrupt it
+                    if (base != Status.NEUTRAL) consecutiveFrozen = 0
+                    if (base == Status.VALID) totalValid++
+                    base
+                }
+            statuses[period.start] = status
+            chainEnd = period.end
+        }
+
+        // Best streak: forward scan. Neutral fragments and frozen periods bridge; failed or
+        // missed full periods reset; the running period gets grace until it is over.
         var best = 0
         var run = 0
         var previousEnd: LocalDate? = null
         for (period in ordered) {
             if (previousEnd != null && period.start != previousEnd) run = 0
-            when (statusOf(period)) {
+            when (statuses.getValue(period.start)) {
                 Status.VALID -> {
                     run++
                     best = maxOf(best, run)
                 }
-                Status.NEUTRAL -> Unit
+                Status.NEUTRAL, Status.FROZEN -> Unit
                 Status.FAILED -> if (period.start != runningPeriod.start) run = 0
             }
             previousEnd = period.end
@@ -264,20 +331,26 @@ object StreakCalculator {
                 break // calendar gap — at least one fully missed period in between
             }
             val isRunning = period.start == runningPeriod.start
-            when (statusOf(period)) {
+            when (statuses.getValue(period.start)) {
                 Status.VALID -> current++
-                Status.NEUTRAL -> Unit
+                Status.NEUTRAL, Status.FROZEN -> Unit
                 Status.FAILED -> if (!isRunning) break // running period still has grace
             }
             expectEnd = period.start
         }
 
+        // Freezes are earned by consistency — one for every FREEZE_EARN_EVERY honestly
+        // completed periods over the habit's lifetime — and spent only when they actually
+        // save a missed period. Everything is derived, so recalculation stays idempotent.
+        val available = (totalValid / FREEZE_EARN_EVERY - frozenSpent).coerceAtLeast(0)
+
         return streak.copy(
-            lastCompletedDate = completionDates.last().format(formatter),
+            lastCompletedDate = completionDates.lastOrNull()?.format(formatter),
             currentStreak = current,
             bestStreak = maxOf(best, current),
             isCompletedToday = normalized.contains(todayStr),
-            completions = normalized
+            completions = normalized,
+            freezesAvailable = available
         )
     }
 
@@ -329,7 +402,10 @@ object StreakCalculator {
             currentStreak = current,
             bestStreak = maxOf(best, current),
             isCompletedToday = normalized.contains(todayStr), // = slipped today
-            completions = normalized
+            completions = normalized,
+            // Freezes are a positive-habit concept: a quit-habit's streak already grows by
+            // itself, so "pausing" it would mean licensing extra slip-ups
+            freezesAvailable = 0
         )
     }
 }
