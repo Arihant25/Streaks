@@ -420,6 +420,9 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                         com.arihant.streaks.notifications.Notifications
                                 .cancelReminder(context, streakId)
                     }
+                    // The process may exist only for this broadcast and dies right after
+                    // onReceive — make sure the toggle is on disk before returning
+                    repository.flushPendingWrites()
                 }
             }
         }

@@ -94,6 +94,20 @@ class StreakRepository {
         }
     }
 
+    /**
+     * Blocks until every queued write has reached the disk. BroadcastReceivers MUST call this
+     * before returning: a process started just to deliver the broadcast (widget tap, "Mark
+     * done" with the app closed) is killed right after onReceive, taking the async writer
+     * thread with it — the mutation would look applied and then silently vanish.
+     */
+    fun flushPendingWrites() {
+        try {
+            ioExecutor.submit {}.get(5, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (e: Exception) {
+            Log.e(TAG, "Timed out waiting for pending writes", e)
+        }
+    }
+
     private fun updateWidget(context: Context) {
         val intent = android.content.Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
         intent.component = ComponentName(context, StreaksWidgetProvider::class.java)

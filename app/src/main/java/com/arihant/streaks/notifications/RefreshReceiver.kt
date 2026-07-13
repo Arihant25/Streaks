@@ -38,6 +38,8 @@ class RefreshReceiver : BroadcastReceiver() {
         repository.recalculateAllStreaks(context)
         ReminderScheduler(context).rescheduleAll(repository.streaks.value ?: emptyList())
         scheduleNextDailyRefresh(context)
+        // Receiver-only processes die right after onReceive — flush the recalculated state
+        repository.flushPendingWrites()
     }
 
     companion object {

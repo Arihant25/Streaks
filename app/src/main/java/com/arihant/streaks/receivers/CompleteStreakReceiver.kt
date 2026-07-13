@@ -65,6 +65,9 @@ class CompleteStreakReceiver : BroadcastReceiver() {
                 val repository = StreakRepository.getInstance()
                 repository.ensureLoaded(context)
                 repository.completeStreak(streakId, context)
+                // The process may exist only for this broadcast and dies right after
+                // onReceive — make sure the completion is on disk before returning
+                repository.flushPendingWrites()
                 NotificationManagerCompat.from(context).cancel(notificationId)
             }
             ACTION_DISMISS -> {
