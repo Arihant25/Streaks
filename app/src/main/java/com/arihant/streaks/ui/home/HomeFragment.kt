@@ -72,6 +72,7 @@ class HomeFragment : Fragment() {
     private var swipeHintPlayed = false
 
     companion object {
+        private const val REQUEST_ADD_STREAK = "home_add_streak"
         const val TUTORIAL_PREFS = "streaks_tutorial"
         private const val PREF_SWIPE_HINT_DONE = "swipe_hint_done"
         private const val PREF_SWIPE_HINT_SHOWN = "swipe_hint_shown"
@@ -149,6 +150,21 @@ class HomeFragment : Fragment() {
         setupRecyclerView()
         observeStreaks()
 
+        // Re-registered on every view creation so the sheet can deliver its
+        // result even after rotation or process death recreates this fragment
+        parentFragmentManager.setFragmentResultListener(
+                REQUEST_ADD_STREAK,
+                viewLifecycleOwner
+        ) { _, result ->
+            settingsViewModel.addStreak(
+                    result.getString(AddStreakDialog.RESULT_NAME)!!,
+                    result.getString(AddStreakDialog.RESULT_EMOJI)!!,
+                    FrequencyType.valueOf(result.getString(AddStreakDialog.RESULT_FREQUENCY)!!),
+                    result.getInt(AddStreakDialog.RESULT_FREQUENCY_COUNT),
+                    result.getString(AddStreakDialog.RESULT_COLOR)!!
+            )
+        }
+
         binding.fabAddStreak.setOnClickListener { showAddStreakDialog() }
         binding.emptyState.setOnClickListener { showAddStreakDialog() }
 
@@ -162,17 +178,8 @@ class HomeFragment : Fragment() {
 
     private fun showAddStreakDialog() {
         val existingCount = settingsViewModel.streaksLiveData.value?.size ?: 0
-        AddStreakDialog(
-                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
-                            settingsViewModel.addStreak(
-                                    name,
-                                    emoji,
-                                    frequency,
-                                    frequencyCount,
-                                    color
-                            )
-                        },
-                        isEditMode = false,
+        AddStreakDialog.newInstance(
+                        requestKey = REQUEST_ADD_STREAK,
                         initialEmoji = AddStreakDialog.defaultEmojiFor(existingCount)
                 )
                 .show(parentFragmentManager, "AddStreakDialog")

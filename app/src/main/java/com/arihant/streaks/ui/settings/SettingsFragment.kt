@@ -42,6 +42,10 @@ import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
 
+    companion object {
+        private const val REQUEST_ADD_STREAK = "settings_add_streak"
+    }
+
     private var _binding: FragmentSettingsBinding? = null
     private val binding
         get() = _binding!!
@@ -108,6 +112,23 @@ class SettingsFragment : Fragment() {
                     )
             view.setPadding(view.paddingLeft, bars.top, view.paddingRight, bars.bottom)
             insets
+        }
+
+        // Re-registered on every view creation so the sheet can deliver its
+        // result even after rotation or process death recreates this fragment
+        parentFragmentManager.setFragmentResultListener(
+                REQUEST_ADD_STREAK,
+                viewLifecycleOwner
+        ) { _, result ->
+            settingsViewModel.addStreak(
+                    result.getString(AddStreakDialog.RESULT_NAME)!!,
+                    result.getString(AddStreakDialog.RESULT_EMOJI)!!,
+                    com.arihant.streaks.data.FrequencyType.valueOf(
+                            result.getString(AddStreakDialog.RESULT_FREQUENCY)!!
+                    ),
+                    result.getInt(AddStreakDialog.RESULT_FREQUENCY_COUNT),
+                    result.getString(AddStreakDialog.RESULT_COLOR)!!
+            )
         }
 
         setupClickListeners()
@@ -371,21 +392,11 @@ class SettingsFragment : Fragment() {
 
     private fun showAddStreakDialog() {
         val existingCount = settingsViewModel.streaksLiveData.value?.size ?: 0
-        val dialog =
-                AddStreakDialog(
-                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
-                            settingsViewModel.addStreak(
-                                    name,
-                                    emoji,
-                                    frequency,
-                                    frequencyCount,
-                                    color
-                            )
-                        },
-                        isEditMode = false,
+        AddStreakDialog.newInstance(
+                        requestKey = REQUEST_ADD_STREAK,
                         initialEmoji = AddStreakDialog.defaultEmojiFor(existingCount)
                 )
-        dialog.show(parentFragmentManager, "AddStreakDialog")
+                .show(parentFragmentManager, "AddStreakDialog")
     }
 
     private fun setupNotificationChannelButton() {

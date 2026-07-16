@@ -126,38 +126,51 @@ class StreakDetailsFragment : Fragment() {
                 binding.cardReminder.setOnClickListener { showReminderDialog(binding) }
 
                 // --- Edit card ---
-                binding.cardEdit.setOnClickListener {
-                        val dialog =
-                                AddStreakDialog(
-                                        onStreakAdded = { name, emoji, frequency, frequencyCount, color ->
-                                                homeViewModel.updateStreakDetails(
-                                                        streak.id,
-                                                        name,
-                                                        emoji,
-                                                        color,
-                                                        frequency,
-                                                        frequencyCount,
-                                                        requireContext()
-                                                )
-                                                Toast.makeText(
-                                                                requireContext(),
-                                                                "Streak updated",
-                                                                Toast.LENGTH_SHORT
-                                                        )
-                                                        .show()
-                                                binding.textName.text = name
-                                                binding.textEmoji.text = emoji
-                                                binding.textFrequency.text =
-                                                        formatFrequency(frequency, frequencyCount)
-                                        },
-                                        isEditMode = true,
-                                        initialFrequency = streak.frequency,
-                                        initialFrequencyCount = streak.frequencyCount,
-                                        initialName = streak.name,
-                                        initialEmoji = streak.emoji,
-                                        initialColor = streak.color
+                // Re-registered on every view creation so the sheet can deliver its
+                // result even after rotation or process death recreates this fragment
+                parentFragmentManager.setFragmentResultListener(
+                        REQUEST_EDIT_STREAK,
+                        viewLifecycleOwner
+                ) { _, result ->
+                        val name = result.getString(AddStreakDialog.RESULT_NAME)!!
+                        val emoji = result.getString(AddStreakDialog.RESULT_EMOJI)!!
+                        val color = result.getString(AddStreakDialog.RESULT_COLOR)!!
+                        val frequency =
+                                com.arihant.streaks.data.FrequencyType.valueOf(
+                                        result.getString(AddStreakDialog.RESULT_FREQUENCY)!!
                                 )
-                        dialog.show(parentFragmentManager, "EditStreakDialog")
+                        val frequencyCount =
+                                result.getInt(AddStreakDialog.RESULT_FREQUENCY_COUNT)
+                        homeViewModel.updateStreakDetails(
+                                streak.id,
+                                name,
+                                emoji,
+                                color,
+                                frequency,
+                                frequencyCount,
+                                requireContext()
+                        )
+                        Toast.makeText(requireContext(), "Streak updated", Toast.LENGTH_SHORT)
+                                .show()
+                        binding.textName.text = name
+                        binding.textEmoji.text = emoji
+                        binding.textFrequency.text = formatFrequency(frequency, frequencyCount)
+                }
+                binding.cardEdit.setOnClickListener {
+                        // Pull the latest values so reopening the sheet after an edit
+                        // doesn't show stale data
+                        val current =
+                                homeViewModel.streaks.value?.find { it.id == streak.id } ?: streak
+                        AddStreakDialog.newInstance(
+                                        requestKey = REQUEST_EDIT_STREAK,
+                                        isEditMode = true,
+                                        initialFrequency = current.frequency,
+                                        initialFrequencyCount = current.frequencyCount,
+                                        initialName = current.name,
+                                        initialEmoji = current.emoji,
+                                        initialColor = current.color
+                                )
+                                .show(parentFragmentManager, "EditStreakDialog")
                 }
 
                 // --- Delete card ---
@@ -1409,6 +1422,7 @@ class StreakDetailsFragment : Fragment() {
 
         companion object {
                 const val ARG_STREAK = "streak"
+                private const val REQUEST_EDIT_STREAK = "details_edit_streak"
                 private const val PREF_CALENDAR_TOOLTIP_SHOWN = "calendar_tooltip_shown"
 
                 fun scheduleReminderAlarm(

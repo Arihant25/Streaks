@@ -10,7 +10,9 @@ import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.core.view.WindowCompat
+import androidx.fragment.app.setFragmentResult
 import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
@@ -29,25 +31,73 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.BreakIterator
 
-class AddStreakDialog(
-        private val onStreakAdded: (String, String, FrequencyType, Int, String) -> Unit,
-        private val isEditMode: Boolean = false,
-        private val initialFrequency: FrequencyType? = null,
-        private val initialFrequencyCount: Int? = null,
-        private val initialName: String? = null,
-        private val initialEmoji: String? = null,
-        private val initialColor: String? = null
-) : BottomSheetDialogFragment() {
+/**
+ * Create/edit bottom sheet. Configured through [newInstance] arguments and delivers
+ * its result via the Fragment Result API, so the system can recreate it on rotation
+ * or process death without crashing (a constructor callback can't be restored).
+ */
+class AddStreakDialog : BottomSheetDialogFragment() {
 
     private var _binding: DialogAddStreakBinding? = null
     private val binding
         get() = _binding!!
 
-    private var selectedEmoji: String = initialEmoji ?: "🔥"
-    private var selectedColor: String = initialColor ?: "#FF9900"
-    private var selectedCount: Int = initialFrequencyCount ?: 1
+    private val requestKey: String
+        get() = requireArguments().getString(ARG_REQUEST_KEY)!!
+    private val isEditMode: Boolean
+        get() = requireArguments().getBoolean(ARG_EDIT_MODE)
+    private val initialFrequency: FrequencyType?
+        get() = requireArguments().getString(ARG_FREQUENCY)?.let { FrequencyType.valueOf(it) }
+    private val initialName: String?
+        get() = requireArguments().getString(ARG_NAME)
+    private val initialEmoji: String?
+        get() = requireArguments().getString(ARG_EMOJI)
+
+    private var selectedEmoji: String = "🔥"
+    private var selectedColor: String = "#FF9900"
+    private var selectedCount: Int = 1
 
     companion object {
+        const val RESULT_NAME = "name"
+        const val RESULT_EMOJI = "emoji"
+        const val RESULT_FREQUENCY = "frequency"
+        const val RESULT_FREQUENCY_COUNT = "frequency_count"
+        const val RESULT_COLOR = "color"
+
+        private const val ARG_REQUEST_KEY = "request_key"
+        private const val ARG_EDIT_MODE = "edit_mode"
+        private const val ARG_FREQUENCY = "frequency"
+        private const val ARG_FREQUENCY_COUNT = "frequency_count"
+        private const val ARG_NAME = "name"
+        private const val ARG_EMOJI = "emoji"
+        private const val ARG_COLOR = "color"
+
+        private const val STATE_EMOJI = "state_emoji"
+        private const val STATE_COLOR = "state_color"
+        private const val STATE_COUNT = "state_count"
+
+        fun newInstance(
+                requestKey: String,
+                isEditMode: Boolean = false,
+                initialFrequency: FrequencyType? = null,
+                initialFrequencyCount: Int? = null,
+                initialName: String? = null,
+                initialEmoji: String? = null,
+                initialColor: String? = null
+        ) =
+                AddStreakDialog().apply {
+                    arguments =
+                            Bundle().apply {
+                                putString(ARG_REQUEST_KEY, requestKey)
+                                putBoolean(ARG_EDIT_MODE, isEditMode)
+                                initialFrequency?.let { putString(ARG_FREQUENCY, it.name) }
+                                initialFrequencyCount?.let { putInt(ARG_FREQUENCY_COUNT, it) }
+                                initialName?.let { putString(ARG_NAME, it) }
+                                initialEmoji?.let { putString(ARG_EMOJI, it) }
+                                initialColor?.let { putString(ARG_COLOR, it) }
+                            }
+                }
+
         private val DEFAULT_EMOJIS =
                 listOf(
                         // Fitness & sports
@@ -95,6 +145,17 @@ class AddStreakDialog(
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val args = requireArguments()
+        selectedEmoji =
+                savedInstanceState?.getString(STATE_EMOJI)
+                        ?: args.getString(ARG_EMOJI) ?: "🔥"
+        selectedColor =
+                savedInstanceState?.getString(STATE_COLOR)
+                        ?: args.getString(ARG_COLOR) ?: "#FF9900"
+        selectedCount =
+                savedInstanceState?.getInt(STATE_COUNT)
+                        ?: args.getInt(ARG_FREQUENCY_COUNT, 1)
+
         binding.sheetTitle.text =
                 if (isEditMode) getString(R.string.edit_streak)
                 else getString(R.string.create_streak)
@@ -118,8 +179,8 @@ class AddStreakDialog(
             // streak counts against the new frequency
             initialFrequency?.let { checkFrequency(it) }
         } else {
-            if (initialFrequency != null) {
-                checkFrequency(initialFrequency)
+            initialFrequency?.let {
+                checkFrequency(it)
                 lockFrequencyControls()
             }
         }
@@ -445,8 +506,24 @@ class AddStreakDialog(
             return
         }
 
-        onStreakAdded(name, selectedEmoji, selectedFrequency(), selectedCount, selectedColor)
+        setFragmentResult(
+                requestKey,
+                bundleOf(
+                        RESULT_NAME to name,
+                        RESULT_EMOJI to selectedEmoji,
+                        RESULT_FREQUENCY to selectedFrequency().name,
+                        RESULT_FREQUENCY_COUNT to selectedCount,
+                        RESULT_COLOR to selectedColor
+                )
+        )
         dismiss()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_EMOJI, selectedEmoji)
+        outState.putString(STATE_COLOR, selectedColor)
+        outState.putInt(STATE_COUNT, selectedCount)
     }
 
     private fun dpToPx(dp: Int): Int =

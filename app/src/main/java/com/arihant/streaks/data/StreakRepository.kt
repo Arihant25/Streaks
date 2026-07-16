@@ -7,11 +7,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.arihant.streaks.utils.WeekConfig
 import com.arihant.streaks.widgets.StreaksWidgetProvider
+import androidx.core.util.AtomicFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -27,12 +26,13 @@ class StreakRepository {
     fun loadStreaksFromFile(context: Context) {
         // Week boundaries in the recalculation below depend on the configured start day
         WeekConfig.init(context)
+        val file = File(context.filesDir, fileName)
+        if (!file.exists()) return
         try {
-            val file = File(context.filesDir, fileName)
-            if (!file.exists()) return
-            FileReader(file).use { reader ->
+            run {
+                val json = AtomicFile(file).readFully().toString(Charsets.UTF_8)
                 val type = object : TypeToken<List<StreakExportDto>>() {}.type
-                val exportList: List<StreakExportDto> = gson.fromJson(reader, type)
+                val exportList: List<StreakExportDto> = gson.fromJson(json, type) ?: emptyList()
                 val today = LocalDate.now()
                 val streaks =
                         exportList.map { dto ->
@@ -59,14 +59,18 @@ class StreakRepository {
                         streaks.map { recalculateStreakFromCompletions(it, it.completions) }
             }
         } catch (e: Exception) {
-            // Optionally log error
+            // Keep the unreadable file around as a backup so the next save
+            // (which would write the empty in-memory list) can't destroy it
+            try {
+                file.copyTo(File(context.filesDir, "$fileName.corrupt"), overwrite = true)
+            } catch (backup: Exception) {
+                // Nothing more we can do
+            }
         }
     }
 
     private fun saveStreaksToFile(context: Context) {
-        try {
-            val file = File(context.filesDir, fileName)
-            val exportList =
+        val exportList =
                     _streaks.value?.map { streak ->
                         StreakExportDto(
                                 id = streak.id,
@@ -85,9 +89,15 @@ class StreakRepository {
                         )
                     }
                             ?: emptyList()
-            FileWriter(file, false).use { writer -> gson.toJson(exportList, writer) }
+        // Atomic write: the data lands in a temp file that replaces streaks.json
+        // only once fully written, so process death mid-save can't corrupt it
+        val atomicFile = AtomicFile(File(context.filesDir, fileName))
+        val out = atomicFile.startWrite()
+        try {
+            out.write(gson.toJson(exportList).toByteArray(Charsets.UTF_8))
+            atomicFile.finishWrite(out)
         } catch (e: Exception) {
-            // Optionally log error
+            atomicFile.failWrite(out)
         }
     }
 
