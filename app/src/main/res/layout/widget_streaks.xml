@@ -26,7 +26,7 @@
                 <TextView
                     android:id="@+id/streak_icon_0"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:text="🏃"
                     android:textSize="30sp"
                     android:gravity="center" />
@@ -50,8 +50,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_0"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="days"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
@@ -82,7 +84,7 @@
                 <TextView
                     android:id="@+id/streak_icon_1"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:text="📚"
                     android:textSize="30sp"
                     android:gravity="center" />
@@ -106,8 +108,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_1"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="days"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
@@ -138,7 +142,7 @@
                 <TextView
                     android:id="@+id/streak_icon_2"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:text="💪"
                     android:textSize="30sp"
                     android:gravity="center" />
@@ -162,8 +166,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_2"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="days"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
@@ -194,7 +200,7 @@
                 <TextView
                     android:id="@+id/streak_icon_3"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:text="🧘"
                     android:textSize="30sp"
                     android:gravity="center" />
@@ -218,8 +224,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_3"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="days"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
@@ -251,7 +259,7 @@
                 <TextView
                     android:id="@+id/streak_icon_4"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:textSize="30sp"
                     android:gravity="center" />
                 <ImageView
@@ -273,8 +281,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_4"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
                 android:gravity="center" />
@@ -305,7 +315,7 @@
                 <TextView
                     android:id="@+id/streak_icon_5"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:textSize="30sp"
                     android:gravity="center" />
                 <ImageView
@@ -327,8 +337,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_5"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
                 android:gravity="center" />
@@ -359,7 +371,7 @@
                 <TextView
                     android:id="@+id/streak_icon_6"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:textSize="30sp"
                     android:gravity="center" />
                 <ImageView
@@ -381,8 +393,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_6"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
                 android:gravity="center" />
@@ -413,7 +427,7 @@
                 <TextView
                     android:id="@+id/streak_icon_7"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:textSize="30sp"
                     android:gravity="center" />
                 <ImageView
@@ -435,8 +449,10 @@
                 android:gravity="center" />
             <TextView
                 android:id="@+id/streak_unit_7"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textSize="12sp"
                 android:textColor="@color/gray_dark"
                 android:gravity="center" />

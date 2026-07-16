@@ -21,11 +21,15 @@ class StreaksWidgetProvider : AppWidgetProvider() {
         const val EXTRA_STREAK_ID = "streak_id"
 
         private const val MAX_COLUMNS = 8
-        // Approximate dp per grid column; kept tight so wide one-row widgets
-        // pack in as many streaks as fit
-        private const val COLUMN_WIDTH_DP = 45
+        // Approximate dp per grid column; wide enough that "months" fits
+        // under a 3-digit count without escaping the column
+        private const val COLUMN_WIDTH_DP = 48
+        // Below this height the unit row is dropped and text shrinks so the
+        // column fits inside the widget instead of spilling past its bounds
+        private const val COMPACT_GRID_HEIGHT_DP = 70
+        private const val REGULAR_GRID_HEIGHT_DP = 100
         // Tall enough to fit the streak name under each column
-        private const val NAMED_GRID_HEIGHT_DP = 100
+        private const val NAMED_GRID_HEIGHT_DP = 140
         // From this height on, AUTO mode switches to the scrollable list
         private const val LIST_HEIGHT_DP = 160
 
@@ -145,16 +149,15 @@ class StreaksWidgetProvider : AppWidgetProvider() {
             val columns =
                     if (widthDp <= 0) 4
                     else (widthDp / COLUMN_WIDTH_DP).coerceIn(1, MAX_COLUMNS)
-            val showNames = heightDp >= NAMED_GRID_HEIGHT_DP
             val views =
                     when (config.mode) {
                         WidgetPrefs.Mode.LIST -> buildListViews(context, appWidgetId, streaks)
                         WidgetPrefs.Mode.GRID ->
-                                buildGridViews(context, streaks, columns, showNames)
+                                buildGridViews(context, streaks, columns, heightDp)
                         WidgetPrefs.Mode.AUTO ->
                                 if (heightDp >= LIST_HEIGHT_DP)
                                         buildListViews(context, appWidgetId, streaks)
-                                else buildGridViews(context, streaks, columns, showNames)
+                                else buildGridViews(context, streaks, columns, heightDp)
                     }
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
@@ -163,10 +166,24 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                 context: Context,
                 streaks: List<Streak>,
                 columns: Int,
-                showNames: Boolean
+                heightDp: Int
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_streaks)
             val visibleCount = minOf(columns, streaks.size, MAX_COLUMNS)
+
+            // Density steps from the reported height so a squeezed widget
+            // shrinks its content instead of overflowing the rounded card:
+            // unknown heights (0) get the regular treatment
+            val tiny = heightDp in 1 until COMPACT_GRID_HEIGHT_DP
+            val compact = heightDp in COMPACT_GRID_HEIGHT_DP until REGULAR_GRID_HEIGHT_DP
+            val showUnit = !tiny && !compact
+            val showNames = heightDp >= NAMED_GRID_HEIGHT_DP
+            val emojiSp = if (tiny) 18f else if (compact) 24f else 30f
+            val countSp = if (tiny) 12f else if (compact) 16f else 18f
+            val paddingDp = if (tiny) 4 else 12
+            val paddingPx =
+                    (paddingDp * context.resources.displayMetrics.density).toInt()
+            views.setViewPadding(R.id.widget_root, paddingPx, paddingPx, paddingPx, paddingPx)
 
             views.setViewVisibility(
                     R.id.widget_empty,
@@ -178,7 +195,21 @@ class StreaksWidgetProvider : AppWidgetProvider() {
                     val streak = streaks[i]
                     views.setViewVisibility(COLUMN_IDS[i], View.VISIBLE)
                     views.setTextViewText(ICON_IDS[i], streak.emoji)
+                    views.setTextViewTextSize(
+                            ICON_IDS[i],
+                            android.util.TypedValue.COMPLEX_UNIT_SP,
+                            emojiSp
+                    )
                     views.setTextViewText(COUNT_IDS[i], streak.currentStreak.toString())
+                    views.setTextViewTextSize(
+                            COUNT_IDS[i],
+                            android.util.TypedValue.COMPLEX_UNIT_SP,
+                            countSp
+                    )
+                    views.setViewVisibility(
+                            UNIT_IDS[i],
+                            if (showUnit) View.VISIBLE else View.GONE
+                    )
                     views.setTextViewText(
                             UNIT_IDS[i],
                             getUnitLabel(streak.frequency, streak.currentStreak)
