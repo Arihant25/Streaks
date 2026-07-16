@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.PowerManager
 import android.provider.Settings
 import androidx.fragment.app.Fragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -13,54 +12,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 class PermissionHelper {
 
     companion object {
-        fun checkAndRequestBatteryOptimization(fragment: Fragment) {
-            val context = fragment.requireContext()
-            val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val packageName = context.packageName
-                if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
-                    showBatteryOptimizationDialog(fragment)
-                }
-            }
-        }
-
-        private fun showBatteryOptimizationDialog(fragment: Fragment) {
-            MaterialAlertDialogBuilder(fragment.requireContext())
-                    .setTitle("Battery Optimization")
-                    .setMessage(
-                            "To ensure reliable notifications, please disable battery optimization for this app. This will allow reminders to work properly even when the app is in the background."
-                    )
-                    .setPositiveButton("Open Settings") { _, _ ->
-                        requestBatteryOptimizationExemption(fragment)
-                    }
-                    .setNegativeButton("Skip", null)
-                    .show()
-        }
-
-        private fun requestBatteryOptimizationExemption(fragment: Fragment) {
-            try {
-                val intent =
-                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                            data = Uri.parse("package:${fragment.requireContext().packageName}")
-                        }
-                fragment.startActivity(intent)
-            } catch (e: Exception) {
-                // Fallback to general battery optimization settings
-                try {
-                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                    fragment.startActivity(intent)
-                } catch (e2: Exception) {
-                    // Final fallback to app settings
-                    val intent =
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.parse("package:${fragment.requireContext().packageName}")
-                            }
-                    fragment.startActivity(intent)
-                }
-            }
-        }
-
         fun checkExactAlarmPermission(context: Context): Boolean {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager

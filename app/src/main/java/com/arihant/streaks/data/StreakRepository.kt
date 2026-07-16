@@ -353,68 +353,8 @@ class StreakRepository {
         }
     }
 
-    private fun checkAndUpdateStreak(
-            streak: Streak,
-            completions: List<String>,
-            today: LocalDate,
-            isUndo: Boolean = false
-    ): Pair<Boolean, List<String>> {
-        val completionsAsDate = completions.map { LocalDate.parse(it, formatter) }
-        val filteredCompletions =
-                when (streak.frequency) {
-                    FrequencyType.DAILY -> completionsAsDate.filter { it == today }
-                    FrequencyType.WEEKLY -> {
-                        val weekFields = WeekConfig.weekFields()
-                        val weekOfYear = today.get(weekFields.weekOfWeekBasedYear())
-                        completionsAsDate.filter {
-                            it.get(weekFields.weekOfWeekBasedYear()) == weekOfYear &&
-                                    it.year == today.year
-                        }
-                    }
-                    FrequencyType.MONTHLY ->
-                            completionsAsDate.filter {
-                                it.month == today.month && it.year == today.year
-                            }
-                    FrequencyType.YEARLY -> completionsAsDate.filter { it.year == today.year }
-                }
-        val count = filteredCompletions.size
-        val filteredCompletionsStr = filteredCompletions.map { it.format(formatter) }
-
-        // Get the last completed date for the streak
-        val lastCompletedDate = streak.getLastCompletedDate()
-
-        // Check if we're in a new period compared to the last completion
-        val isNewPeriod =
-                if (lastCompletedDate != null) {
-                    when (streak.frequency) {
-                        FrequencyType.DAILY -> today != lastCompletedDate
-                        FrequencyType.WEEKLY -> {
-                            val weekFields = WeekConfig.weekFields()
-                            val currentWeek = today.get(weekFields.weekOfWeekBasedYear())
-                            val lastWeek = lastCompletedDate.get(weekFields.weekOfWeekBasedYear())
-                            currentWeek != lastWeek || today.year != lastCompletedDate.year
-                        }
-                        FrequencyType.MONTHLY ->
-                                today.month != lastCompletedDate.month ||
-                                        today.year != lastCompletedDate.year
-                        FrequencyType.YEARLY -> today.year != lastCompletedDate.year
-                    }
-                } else true // If no last completion, it's always a new period
-
-        // For non-undo operations:
-        // - If it's a new period and we've met the frequency count, increment the streak
-        // - If it's the same period, don't increment even if we exceed the frequency count
-        // For undo operations:
-        // - If we drop below frequency count in the current period, decrement the streak
-        return if (!isUndo) {
-            Pair(isNewPeriod && count >= streak.frequencyCount, filteredCompletionsStr)
-        } else {
-            Pair(count < streak.frequencyCount, filteredCompletionsStr)
-        }
-    }
-
     /**
-     * Recalculates all streaks from their completion data. 
+     * Recalculates all streaks from their completion data.
      * Useful for fixing data inconsistencies or after app updates.
      */
     fun recalculateAllStreaks(context: Context? = null) {

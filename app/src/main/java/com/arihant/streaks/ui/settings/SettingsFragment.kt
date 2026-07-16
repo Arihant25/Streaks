@@ -196,9 +196,6 @@ class SettingsFragment : Fragment() {
                 if (!PermissionHelper.checkExactAlarmPermission(requireContext())) {
                     PermissionHelper.requestExactAlarmPermission(this)
                 }
-
-                // Check battery optimization
-                PermissionHelper.checkAndRequestBatteryOptimization(this)
             }
             settingsViewModel.setNotificationEnabled(isChecked)
         }

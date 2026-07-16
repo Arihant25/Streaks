@@ -64,7 +64,6 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.datastore:datastore-preferences:1.1.0")
-    implementation("androidx.work:work-runtime-ktx:2.10.1")
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.transition)

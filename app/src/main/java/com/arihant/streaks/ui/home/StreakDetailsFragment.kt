@@ -1,6 +1,5 @@
 package com.arihant.streaks.ui.home
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -14,8 +13,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -1374,8 +1371,10 @@ class StreakDetailsFragment : Fragment() {
                         java.time.LocalTime.parse(time)
                                 .format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
 
-                // If all days are selected, show "every day"
-                if (days.size == 7) {
+                // All days selected shows "every day"; old app versions stored
+                // every-day reminders as an EMPTY days list, so imported data
+                // can legitimately carry one — treat it the same, don't crash
+                if (days.isEmpty() || days.size == 7) {
                         return "Every day at $timeStr"
                 }
 
@@ -1449,78 +1448,3 @@ class StreakDetailsFragment : Fragment() {
         }
 }
 
-class ReminderReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-                try {
-                        // Check if this is from the old alarm system - handle for backward
-                        // compatibility
-                        val reminderDay = intent.getIntExtra("reminderDay", -1)
-                        if (reminderDay != -1) {
-                                val today =
-                                        (java.time.LocalDate.now().dayOfWeek.value + 6) %
-                                                7 // 0=Mon, 6=Sun
-                                if (today != reminderDay) return // Not the right day
-                        }
-
-                        // Create notification channel if needed (Android 8+)
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                val channel =
-                                        android.app.NotificationChannel(
-                                                        "streak_reminder_channel",
-                                                        "Streak Reminders",
-                                                        android.app.NotificationManager
-                                                                .IMPORTANCE_HIGH
-                                                )
-                                                .apply {
-                                                        description =
-                                                                "Notifications for streak reminders"
-                                                        enableVibration(true)
-                                                        enableLights(true)
-                                                }
-                                val manager =
-                                        context.getSystemService(Context.NOTIFICATION_SERVICE) as
-                                                android.app.NotificationManager
-                                manager.createNotificationChannel(channel)
-                        }
-
-                        // Check notification permission before showing notification
-                        if (android.os.Build.VERSION.SDK_INT >=
-                                        android.os.Build.VERSION_CODES.TIRAMISU
-                        ) {
-                                val permissionGranted =
-                                        context.checkSelfPermission(
-                                                android.Manifest.permission.POST_NOTIFICATIONS
-                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (!permissionGranted) return
-                        }
-
-                        val reminderText =
-                                intent.getStringExtra("reminderText")
-                                        ?: "Time to work on your streak!"
-                        val builder =
-                                NotificationCompat.Builder(context, "streak_reminder_channel")
-                                        .setSmallIcon(
-                                                com.arihant.streaks.R.drawable.ic_notification_24
-                                        )
-                                        .setContentTitle("Streak Reminder")
-                                        .setContentText(reminderText)
-                                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                        .setAutoCancel(true)
-                                        .setVibrate(longArrayOf(0, 250, 250, 250))
-                                        .setCategory(NotificationCompat.CATEGORY_REMINDER)
-
-                        val notificationManager =
-                                androidx.core.app.NotificationManagerCompat.from(context)
-                        try {
-                                notificationManager.notify(
-                                        System.currentTimeMillis().toInt(),
-                                        builder.build()
-                                )
-                        } catch (e: SecurityException) {
-                                // Permission denied, ignore silently
-                        }
-                } catch (e: Exception) {
-                        // Handle any unexpected errors gracefully
-                }
-        }
-}

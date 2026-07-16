@@ -1,159 +1,103 @@
 package com.arihant.streaks.utils
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
-import androidx.work.*
+import android.content.Intent
+import android.net.Uri
 import com.arihant.streaks.data.Reminder
-import com.arihant.streaks.workers.ReminderWorker
+import com.arihant.streaks.notifications.ReminderReceiver
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.concurrent.TimeUnit
 
 /**
- * NotificationScheduler handles reliable notification scheduling using WorkManager.
+ * Schedules reminder notifications with AlarmManager.
  *
- * This replaces the previous AlarmManager-based approach to provide:
- * - Better reliability on modern Android versions (API 23+)
- * - Automatic handling of Doze mode and App Standby
- * - Persistence across device reboots
- * - Battery optimization resilience
- * - Exact timing when possible with proper permissions
+ * One alarm per streak, always set for the next occurrence and re-armed by
+ * [ReminderReceiver] when it fires. Exact alarms fire on time even in Doze;
+ * WorkManager periodic work (the previous approach) drifts and gets deferred,
+ * so a "remind me at 21:00" arrived minutes to hours late.
  */
 class NotificationScheduler(private val context: Context) {
 
     companion object {
-        private const val REMINDER_WORK_PREFIX = "reminder_work_"
+        const val ACTION_REMINDER = "com.arihant.streaks.REMINDER_ALARM"
+        const val EXTRA_STREAK_ID = "streak_id"
+        const val EXTRA_STREAK_NAME = "streak_name"
+        const val EXTRA_TIME = "time"
+        const val EXTRA_DAYS = "days"
+
+        /**
+         * Next occurrence of [time] strictly after [now], restricted to [days]
+         * (0=Monday..6=Sunday) when non-empty.
+         */
+        fun nextTrigger(now: LocalDateTime, time: LocalTime, days: List<Int>): LocalDateTime {
+            var candidate = now.toLocalDate().atTime(time)
+            if (!candidate.isAfter(now)) candidate = candidate.plusDays(1)
+            if (days.isEmpty()) return candidate
+            repeat(7) {
+                val dayIndex = (candidate.dayOfWeek.value + 6) % 7 // 0=Monday
+                if (dayIndex in days) return candidate
+                candidate = candidate.plusDays(1)
+            }
+            return candidate
+        }
     }
+
+    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleReminder(streakId: String, streakName: String, reminder: Reminder) {
-        // Cancel existing reminders for this streak
-        cancelReminder(streakId)
-
-        val time = LocalTime.parse(reminder.time)
-
-        if (reminder.days.isNotEmpty()) {
-            // Schedule for specific days
-            for (day in reminder.days) {
-                scheduleWeeklyReminder(streakId, streakName, time, day, reminder)
-            }
+        val next =
+                nextTrigger(LocalDateTime.now(), LocalTime.parse(reminder.time), reminder.days)
+        val triggerAtMillis = next.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val pendingIntent = reminderIntent(streakId, streakName, reminder)
+        // Exact when the user has allowed it (Settings prompts for it); the
+        // while-idle fallback still beats deferred periodic work by hours
+        if (alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+            )
         } else {
-            // Schedule daily
-            scheduleDailyReminder(streakId, streakName, time, reminder)
+            alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+            )
         }
-    }
-
-    private fun scheduleDailyReminder(
-            streakId: String,
-            streakName: String,
-            time: LocalTime,
-            reminder: Reminder
-    ) {
-        val now = LocalDateTime.now()
-        var triggerTime = now.withHour(time.hour).withMinute(time.minute).withSecond(0).withNano(0)
-
-        // If the time has passed today, schedule for tomorrow
-        if (triggerTime.isBefore(now)) {
-            triggerTime = triggerTime.plusDays(1)
-        }
-
-        val delayMillis =
-                triggerTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() -
-                        System.currentTimeMillis()
-
-        val inputData =
-                Data.Builder()
-                        .putString(ReminderWorker.STREAK_ID_KEY, streakId)
-                        .putString(ReminderWorker.STREAK_NAME_KEY, streakName)
-                        .putString(
-                                ReminderWorker.REMINDER_TEXT_KEY,
-                                "Time to work on your $streakName streak!"
-                        )
-                        .build()
-
-        val workRequest =
-                PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS)
-                        .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-                        .setInputData(inputData)
-                        .addTag("${REMINDER_WORK_PREFIX}${streakId}_daily")
-                        .setConstraints(
-                                Constraints.Builder()
-                                        .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-                                        .setRequiresBatteryNotLow(false)
-                                        .setRequiresCharging(false)
-                                        .setRequiresDeviceIdle(false)
-                                        .build()
-                        )
-                        .build()
-
-        WorkManager.getInstance(context).enqueue(workRequest)
-    }
-
-    private fun scheduleWeeklyReminder(
-            streakId: String,
-            streakName: String,
-            time: LocalTime,
-            dayOfWeek: Int,
-            reminder: Reminder
-    ) {
-        val now = LocalDateTime.now()
-        var triggerDate = now.withHour(time.hour).withMinute(time.minute).withSecond(0).withNano(0)
-
-        // Calculate days until the target day (0=Monday, 6=Sunday)
-        val currentDayOfWeek = (now.dayOfWeek.value + 6) % 7 // Convert to 0=Monday
-        var daysUntil = (dayOfWeek - currentDayOfWeek + 7) % 7
-
-        // If it's the same day but time has passed, schedule for next week
-        if (daysUntil == 0 && triggerDate.isBefore(now)) {
-            daysUntil = 7
-        }
-
-        triggerDate = triggerDate.plusDays(daysUntil.toLong())
-
-        val delayMillis =
-                triggerDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() -
-                        System.currentTimeMillis()
-
-        val inputData =
-                Data.Builder()
-                        .putString(ReminderWorker.STREAK_ID_KEY, streakId)
-                        .putString(ReminderWorker.STREAK_NAME_KEY, streakName)
-                        .putString(
-                                ReminderWorker.REMINDER_TEXT_KEY,
-                                "Time to work on your $streakName streak!"
-                        )
-                        .build()
-
-        val workRequest =
-                PeriodicWorkRequestBuilder<ReminderWorker>(7, TimeUnit.DAYS)
-                        .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-                        .setInputData(inputData)
-                        .addTag("${REMINDER_WORK_PREFIX}${streakId}_$dayOfWeek")
-                        .setConstraints(
-                                Constraints.Builder()
-                                        .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-                                        .setRequiresBatteryNotLow(false)
-                                        .setRequiresCharging(false)
-                                        .setRequiresDeviceIdle(false)
-                                        .build()
-                        )
-                        .build()
-
-        WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     fun cancelReminder(streakId: String) {
-        // Cancel all work with tags containing this streak ID
-        WorkManager.getInstance(context)
-                .cancelAllWorkByTag("${REMINDER_WORK_PREFIX}${streakId}_daily")
-
-        // Cancel weekly reminders for all days
-        for (day in 0..6) {
-            WorkManager.getInstance(context)
-                    .cancelAllWorkByTag("${REMINDER_WORK_PREFIX}${streakId}_$day")
-        }
+        alarmManager.cancel(reminderIntent(streakId, "", null))
     }
 
-    fun cancelAllReminders() {
-        WorkManager.getInstance(context).cancelAllWork()
+    /**
+     * The streak id rides in both the data URI and the request code so each
+     * streak keeps exactly one alarm: scheduling replaces, cancel matches.
+     */
+    private fun reminderIntent(
+            streakId: String,
+            streakName: String,
+            reminder: Reminder?
+    ): PendingIntent {
+        val intent =
+                Intent(context, ReminderReceiver::class.java).apply {
+                    action = ACTION_REMINDER
+                    data = Uri.parse("streaks://reminder/$streakId")
+                    putExtra(EXTRA_STREAK_ID, streakId)
+                    putExtra(EXTRA_STREAK_NAME, streakName)
+                    reminder?.let {
+                        putExtra(EXTRA_TIME, it.time)
+                        putExtra(EXTRA_DAYS, it.days.toIntArray())
+                    }
+                }
+        return PendingIntent.getBroadcast(
+                context,
+                streakId.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 }

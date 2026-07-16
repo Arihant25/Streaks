@@ -9,7 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 
 // The one process-wide DataStore for the "settings" file. DataStore throws
 // IllegalStateException if two delegates for the same file are ever read in
-// the same process (e.g. ReminderWorker firing while the app is open), so
+// the same process (e.g. ReminderReceiver firing while the app is open), so
 // every reader must go through this property.
 val Context.settingsDataStore: DataStore<Preferences> by
         preferencesDataStore(
