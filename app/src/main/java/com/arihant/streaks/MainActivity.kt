@@ -1,10 +1,15 @@
 package com.arihant.streaks
 
 import android.os.Bundle
+import android.view.ViewGroup
 import android.view.animation.OvershootInterpolator
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import com.arihant.streaks.databinding.ActivityMainBinding
@@ -18,10 +23,24 @@ class MainActivity : AppCompatActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Android 15+ forces edge-to-edge for targetSdk 35; opt in explicitly so
+        // older versions behave the same and the system bars get proper scrims
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Keep the floating nav pill above the system navigation bar
+        val pillBaseMargin =
+                (binding.navPill.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        ViewCompat.setOnApplyWindowInsetsListener(binding.navPill) { view, insets ->
+            val navBar = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = pillBaseMargin + navBar
+            }
+            insets
+        }
 
         // Load streaks from persistent storage
         settingsViewModel.loadStreaksFromFile()

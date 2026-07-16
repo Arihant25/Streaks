@@ -126,6 +126,26 @@ class HomeFragment : Fragment() {
             insets
         }
 
+        // The list scrolls behind the nav pill; grow its bottom padding by the
+        // navigation bar height so the last card clears the (raised) pill
+        val listBasePadding = binding.recyclerStreaks.paddingBottom
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.recyclerStreaks) {
+                view,
+                insets ->
+            val navBar =
+                    insets.getInsets(
+                                    androidx.core.view.WindowInsetsCompat.Type.navigationBars()
+                            )
+                            .bottom
+            view.setPadding(
+                    view.paddingLeft,
+                    view.paddingTop,
+                    view.paddingRight,
+                    listBasePadding + navBar
+            )
+            insets
+        }
+
         setupRecyclerView()
         observeStreaks()
 

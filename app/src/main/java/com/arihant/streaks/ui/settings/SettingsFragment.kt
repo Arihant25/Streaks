@@ -100,6 +100,16 @@ class SettingsFragment : Fragment() {
     ): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
 
+        // Edge-to-edge: keep content below the status bar and above the nav bar
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val bars =
+                    insets.getInsets(
+                            androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                    )
+            view.setPadding(view.paddingLeft, bars.top, view.paddingRight, bars.bottom)
+            insets
+        }
+
         setupClickListeners()
         setupNotificationSwitch()
         setupNotificationChannelButton()

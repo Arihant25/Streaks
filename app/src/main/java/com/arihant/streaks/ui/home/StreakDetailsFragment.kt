@@ -74,6 +74,23 @@ class StreakDetailsFragment : Fragment() {
                 val binding = FragmentStreakDetailsBinding.inflate(inflater, container, false)
                 notificationScheduler = NotificationScheduler(requireContext())
 
+                // Edge-to-edge: keep content below the status bar and above the nav bar
+                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) {
+                        view,
+                        insets ->
+                        val bars =
+                                insets.getInsets(
+                                        androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                                )
+                        view.setPadding(
+                                view.paddingLeft,
+                                bars.top,
+                                view.paddingRight,
+                                bars.bottom
+                        )
+                        insets
+                }
+
                 binding.textEmoji.text = streak.emoji
                 binding.textName.text = streak.name
                 binding.textFrequency.text =
