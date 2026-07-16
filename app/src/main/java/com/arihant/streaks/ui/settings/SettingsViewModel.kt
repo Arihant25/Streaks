@@ -1,11 +1,10 @@
 package com.arihant.streaks.ui.settings
 
 import android.app.Application
-import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
@@ -13,14 +12,14 @@ import com.arihant.streaks.data.FrequencyType
 import com.arihant.streaks.data.Streak
 import com.arihant.streaks.data.StreakExportDto
 import com.arihant.streaks.data.StreakRepository
+import com.arihant.streaks.data.settingsDataStore
 import com.arihant.streaks.utils.WeekConfig
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-
-private val Context.dataStore by preferencesDataStore(name = "settings")
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = StreakRepository.getInstance()
@@ -43,37 +42,44 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Expose streaks for export/import
     val streaksLiveData: LiveData<List<Streak>> = repository.streaks
 
+    // An IO failure while reading would otherwise cancel viewModelScope and
+    // crash the process; fall back to defaults instead
+    private val settingsFlow =
+            context.settingsDataStore.data.catch { emit(emptyPreferences()) }
+
     init {
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[THEME_KEY] ?: "system" }.collect {
+            settingsFlow.map { prefs -> prefs[THEME_KEY] ?: "system" }.collect {
                 _theme.value = it
             }
         }
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[NOTIFICATIONS_KEY] ?: false }.collect {
+            settingsFlow.map { prefs -> prefs[NOTIFICATIONS_KEY] ?: false }.collect {
                 _notificationsEnabled.value = it
             }
         }
         viewModelScope.launch {
-            context.dataStore.data.map { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] ?: true }.collect {
+            settingsFlow.map { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] ?: true }.collect {
                 _showWeekGraph.value = it
             }
         }
     }
 
     fun setTheme(theme: String) {
-        viewModelScope.launch { context.dataStore.edit { prefs -> prefs[THEME_KEY] = theme } }
+        viewModelScope.launch {
+            context.settingsDataStore.edit { prefs -> prefs[THEME_KEY] = theme }
+        }
     }
 
     fun setNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            context.dataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
+            context.settingsDataStore.edit { prefs -> prefs[NOTIFICATIONS_KEY] = enabled }
         }
     }
 
     fun setShowWeekGraph(show: Boolean) {
         viewModelScope.launch {
-            context.dataStore.edit { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] = show }
+            context.settingsDataStore.edit { prefs -> prefs[SHOW_WEEK_GRAPH_KEY] = show }
         }
     }
 

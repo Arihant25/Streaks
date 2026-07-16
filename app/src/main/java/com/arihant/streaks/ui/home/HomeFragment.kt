@@ -170,14 +170,20 @@ class HomeFragment : Fragment() {
                             }
                         },
                         onStreakClicked = { streak, view ->
-                            val action =
-                                    com.arihant.streaks.ui.home.HomeFragmentDirections
-                                            .actionHomeToStreakDetails(streak)
-                            val extras =
-                                    androidx.navigation.fragment.FragmentNavigatorExtras(
-                                            view to "streak_card_${streak.id}"
-                                    )
-                            findNavController().navigate(action, extras)
+                            // A second tap mid-transition (or a tap after another card
+                            // already navigated) would throw: the action no longer
+                            // exists from the current destination
+                            val navController = findNavController()
+                            if (navController.currentDestination?.id == R.id.navigation_home) {
+                                val action =
+                                        com.arihant.streaks.ui.home.HomeFragmentDirections
+                                                .actionHomeToStreakDetails(streak)
+                                val extras =
+                                        androidx.navigation.fragment.FragmentNavigatorExtras(
+                                                view to "streak_card_${streak.id}"
+                                        )
+                                navController.navigate(action, extras)
+                            }
                         }
                 )
 
@@ -222,7 +228,9 @@ class HomeFragment : Fragment() {
                                 if (pos == RecyclerView.NO_POSITION) return
                                 // The user knows the gesture now, so retire the tutorial nudge
                                 tutorialPrefs().edit().putBoolean(PREF_SWIPE_HINT_DONE, true).apply()
-                                val streak = streaksAdapter.currentList[pos]
+                                // submitList can shrink the list while a swipe settles,
+                                // leaving pos past the end
+                                val streak = streaksAdapter.currentList.getOrNull(pos) ?: return
                                 viewHolder.itemView.performHapticFeedback(
                                         HapticFeedbackConstants.CONFIRM
                                 )

@@ -19,8 +19,8 @@ android {
         applicationId = "com.arihant.streaks"
         minSdk = 31
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.2"
+        versionCode = 9
+        versionName = "2.3"
     }
 
     signingConfigs {
@@ -68,6 +68,5 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.transition)
-    implementation("com.google.android.material:material:1.11.0")
     implementation("nl.dionsegijn:konfetti-xml:2.0.4")
 }

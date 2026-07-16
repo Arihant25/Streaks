@@ -9,10 +9,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.arihant.streaks.R
+import com.arihant.streaks.data.settingsDataStore
 import com.arihant.streaks.receivers.CompleteStreakReceiver
 import kotlinx.coroutines.flow.first
 
@@ -25,14 +25,14 @@ class ReminderWorker(private val context: Context, params: WorkerParameters) :
         const val REMINDER_TEXT_KEY = "reminder_text"
         const val NOTIFICATION_CHANNEL_ID = "streak_reminder_channel"
 
-        private val Context.dataStore by preferencesDataStore("settings")
         private val NOTIFICATIONS_KEY = booleanPreferencesKey("notifications_enabled")
     }
 
     override suspend fun doWork(): Result {
         return try {
             // Check if notifications are enabled in app settings
-            val notificationsEnabled = context.dataStore.data.first()[NOTIFICATIONS_KEY] ?: false
+            val notificationsEnabled =
+                    context.settingsDataStore.data.first()[NOTIFICATIONS_KEY] ?: false
             if (!notificationsEnabled) {
                 return Result.success()
             }
