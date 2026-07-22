@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://arihant25.github.io/Streaks/sitemap.xml
+Sitemap: https://arihant25.github.io/streaks/sitemap.xml
