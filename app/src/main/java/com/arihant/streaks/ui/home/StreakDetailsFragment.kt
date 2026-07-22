@@ -998,12 +998,7 @@ class StreakDetailsFragment : Fragment() {
                                                         isToday ->
                                                                 resolveThemeColor(
                                                                         context,
-                                                                        com.google
-                                                                                .android
-                                                                                .material
-                                                                                .R
-                                                                                .attr
-                                                                                .colorPrimary
+                                                                        androidx.appcompat.R.attr.colorPrimary
                                                                 )
                                                         else ->
                                                                 resolveThemeColor(

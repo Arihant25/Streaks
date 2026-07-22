@@ -13,14 +13,14 @@ val localProps = Properties().apply {
 
 android {
     namespace = "com.arihant.streaks"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.arihant.streaks"
         minSdk = 31
-        targetSdk = 35
-        versionCode = 9
-        versionName = "2.3"
+        targetSdk = 37
+        versionCode = 10
+        versionName = "2.4"
     }
 
     signingConfigs {
@@ -48,8 +48,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions { jvmTarget = "11" }
     buildFeatures { viewBinding = true }
+}
+
+// AGP 9 removed android.kotlinOptions; jvmTarget must match targetCompatibility
+// above or the Kotlin and Java compilers disagree on the bytecode level.
+kotlin {
+    compilerOptions { jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11 }
 }
 
 dependencies {
@@ -61,9 +66,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("androidx.datastore:datastore-preferences:1.1.0")
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.transition)
